@@ -6,6 +6,7 @@ import { config } from '../services/wagmi';
 // Main provider that wraps the SDK PrivyProvider
 function PrivyProvider({ children }) {
   const appId = import.meta.env.VITE_PRIVY_APP_ID;
+  const walletConnectProjectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
 
   console.log('PrivyProvider rendering, appId:', appId);
 
@@ -18,9 +19,11 @@ function PrivyProvider({ children }) {
     <SDKPrivyProvider
       appId={appId}
       config={{
+        loginMethods: ['wallet', 'email'],
         appearance: {
           theme: 'light',
         },
+        walletConnectCloudProjectId: walletConnectProjectId,
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
         },
