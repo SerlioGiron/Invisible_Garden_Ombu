@@ -64,7 +64,7 @@ function Home() {
 
   return (
     <Container size="xl">
-      <Stack gap="xl" style={authenticated ? {} : { justifyContent: "center", minHeight: "calc(100vh - 140px)" }}>
+      <Stack gap="xl" style={{ justifyContent: "center", minHeight: "calc(100vh - 140px)" }}>
         {/* Hero Section */}
         <Paper
           p="xl"
@@ -72,7 +72,7 @@ function Home() {
           style={{
             color: "white",
             background: "transparent",
-            marginTop: authenticated ? "2rem" : 0,
+            // marginTop: joinedTheGroup ? "2rem" : 0,
           }}
         >
           <Stack align="center" justify="center" gap="md" h={200}>
@@ -88,14 +88,19 @@ function Home() {
               </Text>
             </div>
             {authenticated ? (
-              <Button
-                size="lg"
-                variant="white"
-                leftSection={<IconPlus size={20} />}
-                onClick={() => navigate("/nueva-publicacion")}
-              >
-                Create Post
-              </Button>
+              <>
+                <Text size="sm" opacity={0.8} align="center">
+                  waiting to join the IG Group
+                </Text>
+                {/* <Button
+                  size="lg"
+                  variant="white"
+                  leftSection={<IconPlus size={20} />}
+                  onClick={() => navigate("/nueva-publicacion")}
+                >
+                  Create Post
+                </Button> */}
+              </>
             ) : (
               <Text size="sm" opacity={0.8} align="center">
                 Connect your wallet to get started
@@ -104,9 +109,9 @@ function Home() {
           </Stack>
         </Paper>
 
-        {authenticated && (
+        {/* {authenticated && (
           <>
-            {/* Estadísticas rápidas */}
+            Estadísticas rápidas
             <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
               {statsCards.map((stat) => {
                 const Icon = stat.icon;
@@ -131,7 +136,7 @@ function Home() {
               })}
             </SimpleGrid>
 
-            {/* Posts recientes */}
+            Posts recientes
             <div>
               <Group justify="space-between" mb="md">
                 <Title size="h3">Recent Posts</Title>
@@ -205,7 +210,7 @@ function Home() {
               )}
             </div>
 
-            {/* Enlaces rápidos */}
+            Enlaces rápidos
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
               <Card padding="md" radius="md" withBorder>
                 <Group mb="md">
@@ -244,7 +249,7 @@ function Home() {
               </Card>
             </SimpleGrid>
           </>
-        )}
+        )} */}
       </Stack>
     </Container>
   );

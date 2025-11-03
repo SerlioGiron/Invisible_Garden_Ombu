@@ -11,7 +11,8 @@ function Layout({ children }) {
     <AppShell
       header={{ height: 80 }}
       footer={{ height: 60 }}
-      navbar={authenticated ? { width: 250, breakpoint: 'sm', collapsed: { mobile: !opened } } : undefined}
+      // navbar={joinedTheGroup ? { width: 250, breakpoint: 'sm', collapsed: { mobile: !opened } } : undefined}
+      navbar={undefined}
       transitionDuration={350}
       transitionTimingFunction="ease"
       padding={0}
@@ -22,9 +23,9 @@ function Layout({ children }) {
       <AppShell.Header>
         <Group h="100%" px="lg" justify="space-between">
           <Group>
-            {authenticated && (
+            {/* {joinedTheGroup && (
               <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            )}
+            )} */}
             <img src="src/assets/logo.png" alt="Logo" style={{ height: 90 }} />
           </Group>
           {authenticated ? (
@@ -38,11 +39,11 @@ function Layout({ children }) {
           )}
         </Group>
       </AppShell.Header>
-      {authenticated && (
+      {/* {joinedTheGroup && (
         <AppShell.Navbar p="md">
           <Navbar />
         </AppShell.Navbar>
-      )}
+      )} */}
       <AppShell.Main style={{ 
         position: 'relative', 
         width: '100%',
