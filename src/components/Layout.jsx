@@ -1,10 +1,11 @@
 import { useDisclosure } from '@mantine/hooks';
-import { AppShell, Group, Burger } from '@mantine/core';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { AppShell, Group, Burger, Button } from '@mantine/core';
+import { usePrivy } from '@privy-io/react-auth';
 import Navbar from './Navbar';
 
 function Layout({ children }) {
   const [opened, { toggle }] = useDisclosure();
+  const { login, logout, authenticated } = usePrivy();
 
   return (
     <AppShell
@@ -21,7 +22,15 @@ function Layout({ children }) {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <img src="src/assets/logo.png" alt="Logo" style={{ height: 90 }} />
           </Group>
-          <ConnectButton />
+          {authenticated ? (
+            <Button onClick={logout} variant="outline">
+              Disconnect
+            </Button>
+          ) : (
+            <Button onClick={login}>
+              Connect Wallet
+            </Button>
+          )}
         </Group>
       </AppShell.Header>
       <AppShell.Navbar p="md">
