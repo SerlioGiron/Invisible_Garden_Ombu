@@ -23,13 +23,16 @@ import {
   IconArrowUp,
   IconArrowDown,
   IconMessage,
+  IconPlus,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import { useContract } from "../hooks/useContract";
+import { usePrivy } from "@privy-io/react-auth";
 
 function Home() {
   const navigate = useNavigate();
-  const { posts, userAddress } = useContract();
+  const { posts } = useContract();
+  const { authenticated } = usePrivy();
 
   // Estadísticas rápidas
   const totalPosts = posts.length;
@@ -52,7 +55,7 @@ function Home() {
       color: "orange",
     },
     {
-      title: "Usuarios Activos",
+      title: "Active Users",
       value: new Set(posts.map((p) => p.authorAddress)).size,
       icon: IconUsers,
       color: "green",
@@ -61,184 +64,187 @@ function Home() {
 
   return (
     <Container size="xl">
-      <Stack gap="xl">
+      <Stack gap="xl" style={authenticated ? {} : { justifyContent: "center", minHeight: "calc(100vh - 140px)" }}>
         {/* Hero Section */}
         <Paper
           p="xl"
           radius="md"
           style={{
             color: "white",
-            background:
-              "linear-gradient(90deg,rgba(2, 0, 110, 1) 0%, rgba(10, 7, 175, 1) 30%, rgba(80, 103, 255, 1) 58%, rgba(84, 14, 232, 1) 100%)",
+            background: "transparent",
+            marginTop: authenticated ? "2rem" : 0,
           }}
         >
-          <Group justify="center" h={200}>
-            <div>
+          <Stack align="center" justify="center" gap="md" h={200}>
+            <div style={{ textAlign: "center" }}>
               <Title size="h1" mb="md" align="center">
-                ¡Bienvenido a REDE! 🚀
+                Welcome to OMBU! 🚀
               </Title>
-              <Text size="lg">
-                La primera red social descentralizada para estudiantes
-                universitarios
+              <Text size="lg" align="center">
+                The first decentralized zk social network for Invisible Garden members
               </Text>
-              <Text size="md" opacity={0.9}>
-                Conecta, comparte y construye comunidad en el blockchain
+              <Text size="md" opacity={0.9} align="center">
+                Connect & share your honest feedback about the fellowship 
               </Text>
             </div>
-            {/* {userAddress ? (
+            {authenticated ? (
               <Button
                 size="lg"
                 variant="white"
                 leftSection={<IconPlus size={20} />}
                 onClick={() => navigate("/nueva-publicacion")}
               >
-                Crear Post
+                Create Post
               </Button>
             ) : (
-              <Text size="sm" opacity={0.8}>
-                Conecta tu wallet para comenzar
+              <Text size="sm" opacity={0.8} align="center">
+                Connect your wallet to get started
               </Text>
-            )} */}
-          </Group>
+            )}
+          </Stack>
         </Paper>
 
-        {/* Estadísticas rápidas */}
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-          {statsCards.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.title} padding="md" radius="md" withBorder>
-                <Group justify="space-between">
-                  <div>
-                    <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                      {stat.title}
-                    </Text>
-                    <Text fw={700} size="xl">
-                      {stat.value}
-                    </Text>
-                  </div>
-                  <Icon
-                    size={28}
-                    color={`var(--mantine-color-${stat.color}-6)`}
-                  />
-                </Group>
-              </Card>
-            );
-          })}
-        </SimpleGrid>
-
-        {/* Posts recientes */}
-        <div>
-          <Group justify="space-between" mb="md">
-            <Title size="h3">Posts recientes</Title>
-            <Button variant="subtle" onClick={() => navigate("/comunidad")}>
-              Ver todos
-            </Button>
-          </Group>
-
-          {recentPosts.length > 0 ? (
-            <Stack gap="md">
-              {recentPosts.map((post) => (
-                <Paper key={post.id} p="md" withBorder radius="md">
-                  <Group justify="space-between" mb="sm">
-                    <Group>
-                      <Avatar color="blue" size="sm" radius="xl">
-                        {post.authorAddress?.substring(2, 4).toUpperCase()}
-                      </Avatar>
+        {authenticated && (
+          <>
+            {/* Estadísticas rápidas */}
+            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+              {statsCards.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <Card key={stat.title} padding="md" radius="md" withBorder>
+                    <Group justify="space-between">
                       <div>
-                        <Text size="sm" fw={500}>
-                          {post.authorName}
+                        <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                          {stat.title}
                         </Text>
-                        <Text size="xs" c="dimmed">
-                          {post.timeAgo}
+                        <Text fw={700} size="xl">
+                          {stat.value}
                         </Text>
                       </div>
+                      <Icon
+                        size={28}
+                        color={`var(--mantine-color-${stat.color}-6)`}
+                      />
                     </Group>
-                    {post.upvotes >= 50 && (
-                      <Badge color="orange" variant="light" size="sm">
-                        Trending
-                      </Badge>
-                    )}
-                  </Group>
-                  <Title align="left" size="h5" py="xs">
-                    {post.title}
-                  </Title>
-                  <Text size="sm" lineClamp={2} mb="sm">
-                    {post.content}
-                  </Text>
-                  <Group gap="3">
-                    <IconArrowUp color="blue" size={14} />
-                    <Text size="xs" c="dimmed">
-                       {post.upvotes} •
-                    </Text>
-                    <IconArrowDown color="red" size={14} />
-                    <Text size="xs" c="dimmed">
-                      {post.downvotes} • 
-                    </Text>
-                    <IconMessageCircle color="orange" size={14} />
-                    <Text size="xs" c="dimmed">
-                      {post.comments || 0}
-                    </Text>
-                  </Group>
+                  </Card>
+                );
+              })}
+            </SimpleGrid>
+
+            {/* Posts recientes */}
+            <div>
+              <Group justify="space-between" mb="md">
+                <Title size="h3">Recent Posts</Title>
+                <Button variant="subtle" onClick={() => navigate("/comunidad")}>
+                  View all
+                </Button>
+              </Group>
+
+              {recentPosts.length > 0 ? (
+                <Stack gap="md">
+                  {recentPosts.map((post) => (
+                    <Paper key={post.id} p="md" withBorder radius="md">
+                      <Group justify="space-between" mb="sm">
+                        <Group>
+                          <Avatar color="blue" size="sm" radius="xl">
+                            {post.authorAddress?.substring(2, 4).toUpperCase()}
+                          </Avatar>
+                          <div>
+                            <Text size="sm" fw={500}>
+                              {post.authorName}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {post.timeAgo}
+                            </Text>
+                          </div>
+                        </Group>
+                        {post.upvotes >= 50 && (
+                          <Badge color="orange" variant="light" size="sm">
+                            Trending
+                          </Badge>
+                        )}
+                      </Group>
+                      <Title align="left" size="h5" py="xs">
+                        {post.title}
+                      </Title>
+                      <Text size="sm" lineClamp={2} mb="sm">
+                        {post.content}
+                      </Text>
+                      <Group gap="3">
+                        <IconArrowUp color="blue" size={14} />
+                        <Text size="xs" c="dimmed">
+                           {post.upvotes} •
+                        </Text>
+                        <IconArrowDown color="red" size={14} />
+                        <Text size="xs" c="dimmed">
+                          {post.downvotes} • 
+                        </Text>
+                        <IconMessageCircle color="orange" size={14} />
+                        <Text size="xs" c="dimmed">
+                          {post.comments || 0}
+                        </Text>
+                      </Group>
+                    </Paper>
+                  ))}
+                </Stack>
+              ) : (
+                <Paper p="xl" ta="center" c="dimmed">
+                  <IconMessageCircle
+                    size={48}
+                    style={{ opacity: 0.5, marginBottom: "1rem" }}
+                  />
+                  <Text>No posts yet</Text>
+                  <Button
+                    mt="md"
+                    onClick={() => navigate("/nueva-publicacion")}
+                    disabled={!authenticated}
+                  >
+                    Create the first post
+                  </Button>
                 </Paper>
-              ))}
-            </Stack>
-          ) : (
-            <Paper p="xl" ta="center" c="dimmed">
-              <IconMessageCircle
-                size={48}
-                style={{ opacity: 0.5, marginBottom: "1rem" }}
-              />
-              <Text>No hay posts aún</Text>
-              <Button
-                mt="md"
-                onClick={() => navigate("/nueva-publicacion")}
-                disabled={!userAddress}
-              >
-                Crear el primer post
-              </Button>
-            </Paper>
-          )}
-        </div>
+              )}
+            </div>
 
-        {/* Enlaces rápidos */}
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-          <Card padding="md" radius="md" withBorder>
-            <Group mb="md">
-              <IconUser size={24} />
-              <Title size="h4">Mi Perfil</Title>
-            </Group>
-            <Text size="sm" c="dimmed" mb="md">
-              Ve tus posts, configuración y estadísticas
-            </Text>
-            <Button
-              variant="light"
-              fullWidth
-              onClick={() => navigate("/perfil")}
-              disabled={!userAddress}
-            >
-              Ver Perfil
-            </Button>
-          </Card>
+            {/* Enlaces rápidos */}
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              <Card padding="md" radius="md" withBorder>
+                <Group mb="md">
+                  <IconUser size={24} />
+                  <Title size="h4">My Profile</Title>
+                </Group>
+                <Text size="sm" c="dimmed" mb="md">
+                  View your posts, settings and statistics
+                </Text>
+                <Button
+                  variant="light"
+                  fullWidth
+                  onClick={() => navigate("/perfil")}
+                  disabled={!authenticated}
+                >
+                  View Profile
+                </Button>
+              </Card>
 
-          <Card padding="md" radius="md" withBorder>
-            <Group mb="md">
-              <IconStar size={24} />
-              <Title size="h4">Trending</Title>
-            </Group>
-            <Text size="sm" c="dimmed" mb="md">
-              Explora los posts más populares en la comunidad
-            </Text>
-            <Button
-              variant="light"
-              fullWidth
-              onClick={() => navigate("/comunidad")}
-              disabled={!userAddress}
-            >
-              Ver posts trending
-            </Button>
-          </Card>
-        </SimpleGrid>
+              <Card padding="md" radius="md" withBorder>
+                <Group mb="md">
+                  <IconStar size={24} />
+                  <Title size="h4">Trending</Title>
+                </Group>
+                <Text size="sm" c="dimmed" mb="md">
+                  Explore the most popular posts in the community
+                </Text>
+                <Button
+                  variant="light"
+                  fullWidth
+                  onClick={() => navigate("/comunidad")}
+                  disabled={!authenticated}
+                >
+                  View trending posts
+                </Button>
+              </Card>
+            </SimpleGrid>
+          </>
+        )}
       </Stack>
     </Container>
   );

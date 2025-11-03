@@ -11,15 +11,20 @@ function Layout({ children }) {
     <AppShell
       header={{ height: 80 }}
       footer={{ height: 60 }}
-      navbar={{ width: 250, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      navbar={authenticated ? { width: 250, breakpoint: 'sm', collapsed: { mobile: !opened } } : undefined}
       transitionDuration={350}
       transitionTimingFunction="ease"
-      padding="sm"
+      padding={0}
+      style={{
+        background: 'transparent'
+      }}
     >
       <AppShell.Header>
         <Group h="100%" px="lg" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            {authenticated && (
+              <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            )}
             <img src="src/assets/logo.png" alt="Logo" style={{ height: 90 }} />
           </Group>
           {authenticated ? (
@@ -33,11 +38,20 @@ function Layout({ children }) {
           )}
         </Group>
       </AppShell.Header>
-      <AppShell.Navbar p="md">
-        <Navbar />
-      </AppShell.Navbar>
-      <AppShell.Main style={{ position: 'relative', width: '100%' }}>
-        <div style={{ width: '100%' }}>
+      {authenticated && (
+        <AppShell.Navbar p="md">
+          <Navbar />
+        </AppShell.Navbar>
+      )}
+      <AppShell.Main style={{ 
+        position: 'relative', 
+        width: '100%',
+        maxWidth: '100%',
+        flex: 1,
+        background: 'linear-gradient(180deg, #1E64FA 0%, #78B4F0 50%, #C8DCB4 75%, #FFF0B4 100%)',
+        minHeight: '100vh'
+      }}>
+        <div style={{ width: '100%', maxWidth: '100%' }}>
           {children}
         </div>
       </AppShell.Main>
