@@ -89,7 +89,7 @@ function Home() {
             </div>
             {authenticated ? (
               <>
-                <Text size="sm" opacity={0.8} align="center">
+                <Text size="sm" opacity={0.8} align="center" c="red">
                   waiting to join the IG Group
                 </Text>
                 {/* <Button
@@ -109,7 +109,7 @@ function Home() {
           </Stack>
         </Paper>
 
-        {/* {authenticated && (
+        {/* {joinedTheGroup && (
           <>
             Estadísticas rápidas
             <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
