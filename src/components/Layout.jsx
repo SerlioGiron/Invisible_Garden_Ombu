@@ -2,10 +2,16 @@ import { useDisclosure } from '@mantine/hooks';
 import { AppShell, Group, Burger, Button } from '@mantine/core';
 import { usePrivy } from '@privy-io/react-auth';
 import Navbar from './Navbar';
+import { useCreateIdentity } from './CreateIdentity';
 
 function Layout({ children }) {
   const [opened, { toggle }] = useDisclosure();
   const { login, logout, authenticated } = usePrivy();
+
+  // Automatically create Semaphore identity after wallet connection
+  useCreateIdentity((identity) => {
+    console.log("✅ Identity created after wallet connection:", identity.commitment.toString());
+  });
 
   return (
     <AppShell
