@@ -4,19 +4,28 @@ import {
   IconUser,
   IconMessage,
   IconUsers,
+  IconSparkles,
 } from "@tabler/icons-react";
 import Home from "../pages/Home";
 import NewPost from "../pages/NewPost";
 import Comunidad from "../pages/Comunidad";
 import MisPosts from "../pages/MisPosts";
 import Perfil from "../pages/Perfil";
+import Welcome from "../pages/Welcome";
 
 const rutas = [
   { 
     icon: IconHome2,
     label: "Inicio",
-    route: "/",
+    route: "/home",
     component: Home,
+    navbar: true
+  },
+  { 
+    icon: IconSparkles,
+    label: "Welcome",
+    route: "/",
+    component: Welcome,
     navbar: true
   },
   {
