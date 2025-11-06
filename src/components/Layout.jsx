@@ -1,5 +1,5 @@
 import { useDisclosure } from '@mantine/hooks';
-import { AppShell, Group, Burger, Button } from '@mantine/core';
+import { AppShell, Group, Burger, Button, Text } from '@mantine/core';
 import { usePrivy } from '@privy-io/react-auth';
 import Navbar from './Navbar';
 import { useCreateIdentity } from './CreateIdentity';
@@ -66,7 +66,17 @@ function Layout({ children }) {
             {joinedTheGroup && (
               <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             )}
-            <img src="src/assets/logo.png" alt="Logo" style={{ height: 90 }} />
+             <Text 
+                size="xl" 
+                opacity={1} 
+                align="center"
+                style={{
+                  fontWeight: 900
+                }}
+                c="black"
+              >
+                OMBU
+              </Text>
           </Group>
           {authenticated ? (
             <Button onClick={handleLogout} variant="outline">
@@ -85,15 +95,15 @@ function Layout({ children }) {
         </AppShell.Navbar>
       )}
       <AppShell.Main 
-        // style={{ 
-        //   position: 'relative', 
-        //   width: '100%',
-        //   maxWidth: '100%',
-        //   flex: 1,
-        //   background: 'linear-gradient(180deg, #1E64FA 0%, #78B4F0 50%, #C8DCB4 75%, #FFF0B4 100%)',
-        //   minHeight: '100vh'
-        // }}
-        style={{ position: 'relative', width: '100%' }}
+        style={{ 
+          position: 'relative', 
+          width: '100%',
+          maxWidth: '100%',
+          flex: 1,
+          background: 'linear-gradient(180deg, #2E86AB 0%, #A9D5B3 50%, #FFF9C4 100%)',
+          minHeight: '100vh',
+          backgroundAttachment: 'fixed'
+        }}
       >
         <div style={{ width: '100%', padding: 20 }}>
           {children}

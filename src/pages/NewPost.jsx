@@ -52,14 +52,14 @@ function NewPost() {
 
   useEffect(() => {
       if (isConfirmed) {
-        // Notificación de éxito
+        // Success notification
         setTimeout(() => {
           <Alert
             icon={<IconCheck size={16} />}
-            title="Post creado exitosamente"
+            title="Post created successfully"
             color="green"
           >
-            Su publicación ha sido confirmada en el blockchain
+            Your post has been confirmed on the blockchain
           </Alert>;
         }, 3000);
         navigate("/");
@@ -72,7 +72,7 @@ function NewPost() {
       [field]: value,
     }));
 
-    // Limpiar error del campo cuando el usuario empiece a escribir
+    // Clear field error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -85,19 +85,19 @@ function NewPost() {
     const newErrors = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = "El título es requerido";
+      newErrors.title = "Title is required";
     } else if (formData.title.length < 5) {
-      newErrors.title = "El título debe tener al menos 5 caracteres";
+      newErrors.title = "Title must be at least 5 characters";
     } else if (formData.title.length > 100) {
-      newErrors.title = "El título no puede exceder 100 caracteres";
+      newErrors.title = "Title cannot exceed 100 characters";
     }
 
     if (!formData.content.trim()) {
-      newErrors.content = "El contenido es requerido";
+      newErrors.content = "Content is required";
     } else if (formData.content.length < 10) {
-      newErrors.content = "El contenido debe tener al menos 10 caracteres";
+      newErrors.content = "Content must be at least 10 characters";
     } else if (formData.content.length > 2000) {
-      newErrors.content = "El contenido no puede exceder 2000 caracteres";
+      newErrors.content = "Content cannot exceed 2000 characters";
     }
 
     setErrors(newErrors);
@@ -114,32 +114,32 @@ function NewPost() {
 
     setIsSubmitting(true);
     setIsValidatingAI(true);
-    setAiSuggestion(null); // Limpiar sugerencias previas
+    setAiSuggestion(null); // Clear previous suggestions
 
     try {
-      console.log("Datos del post:", formData.content);
+      console.log("Post data:", formData.content);
       const validationResponse = await validarPostAI(formData.content);
       const validationResponseTitle = await validarTituloAI(formData.title);
 
       setIsValidatingAI(false);
 
-      // Verificar si hay sugerencia de AI
+      // Check if there's an AI suggestion
       const data = validationResponse.data;
       if (data && data.comentario_formalizado) {
-        // El comentario no es válido, mostrar sugerencia
+        // The comment is not valid, show suggestion
         setAiSuggestion(validationResponse.data.comentario_formalizado);
         setIsSubmitting(false);
         return;
       }
 
-      // Si llegamos aquí, el comentario es válido (comentario_formalizado es null)
-      console.log("Comentario validado por AI, procediendo a publicar...");
+      // If we get here, the comment is valid (comentario_formalizado is null)
+      console.log("Comment validated by AI, proceeding to publish...");
       const categoria = data.categoria;
       const tags = data.tags || [];
 
       const dataTitulo = validationResponseTitle.data;
       if (dataTitulo && dataTitulo.titulo_sugerido) {
-        // El título no es válido, mostrar sugerencia
+        // The title is not valid, show suggestion
         setAiSuggestionTitle(dataTitulo.titulo_sugerido);
         setIsSubmitting(false);
         return;
@@ -147,18 +147,18 @@ function NewPost() {
 
       await post(formData.title, formData.content, categoria, tags);
     } catch (error) {
-      console.error("Error al crear el post:", error);
+      console.error("Error creating post:", error);
       setIsValidatingAI(false);
       setErrors({
         submit:
-          "El comentario no es coherente o no tiene suficiente contenido válido Intenta nuevamente.",
+          "The comment is not coherent or doesn't have enough valid content. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Función para aceptar sugerencia de AI
+  // Function to accept AI suggestion
   const acceptAiSuggestion = (field) => {
     if (field === "title") {
       setFormData((prev) => ({
@@ -175,7 +175,7 @@ function NewPost() {
     }
   };
 
-  // Función para rechazar sugerencia de AI
+  // Function to reject AI suggestion
   const rejectAiSuggestion = () => {
     setAiSuggestion(null);
   };
@@ -196,23 +196,23 @@ function NewPost() {
       <form size="xl" onSubmit={handleSubmit}>
         <Stack gap="xl">
           <Container w="100%">
-            {/* Header con botón de regreso */}
+            {/* Header with back button */}
             <Group mb="xl">
               <ActionIcon
                 variant="subtle"
                 onClick={() => navigate("/")}
-                aria-label="Volver atrás"
+                aria-label="Go back"
                 disabled={isValidatingAI}
               >
                 <IconArrowLeft size={20} />
               </ActionIcon>
               <Title order={1} size="h2">
-                Crear nueva publicación
+                Create New Post
               </Title>
             </Group>
 
             <Stack gap="lg">
-              {/* Preview del autor */}
+              {/* Author preview */}
               <Paper withBorder p="md" radius="md">
                 <Group>
                   <Avatar color="blue" radius="xl">
@@ -220,37 +220,37 @@ function NewPost() {
                   </Avatar>
                   <div>
                     <Text fw={600} size="sm">
-                      Usuario Anónimo
+                      Anonymous User
                     </Text>
                     <Group gap="xs">
                       <Text size="xs" c="dimmed">
-                        Publicando ahora
+                        Posting now
                       </Text>
                     </Group>
                   </div>
                 </Group>
               </Paper>
 
-              {/* Formulario */}
+              {/* Form */}
               <Paper withBorder p="xl" radius="md">
                 <Stack gap="md">
-                  {/* Título */}
+                  {/* Title */}
                   <TextInput
-                    label="Título del post"
-                    placeholder="Escribe un título..."
+                    label="Post Title"
+                    placeholder="Write a title..."
                     value={formData.title}
                     onChange={(e) => handleInputChange("title", e.target.value)}
                     error={errors.title}
                     required
-                    description={`${formData.title.length}/${MAX_TITULO} caracteres`}
+                    description={`${formData.title.length}/${MAX_TITULO} characters`}
                     maxLength={MAX_TITULO}
                     disabled={isValidatingAI}
                   />
 
-                  {/* Contenido */}
+                  {/* Content */}
                   <Textarea
-                    label="Contenido del post"
-                    placeholder="¿Qué quieres compartir con la comunidad?"
+                    label="Post Content"
+                    placeholder="What do you want to share with the community?"
                     value={formData.content}
                     onChange={(e) =>
                       handleInputChange("content", e.target.value)
@@ -260,18 +260,18 @@ function NewPost() {
                     minRows={6}
                     maxRows={12}
                     autosize
-                    description={`${formData.content.length}/${MAX_CONTENIDO} caracteres`}
+                    description={`${formData.content.length}/${MAX_CONTENIDO} characters`}
                     maxLength={MAX_CONTENIDO}
                     disabled={isValidatingAI}
                   />
                 </Stack>
               </Paper>
 
-              {/* Alerta de sugerencia de AI */}
+              {/* AI suggestion alert */}
               {aiSuggestion && (
                 <Alert
                   icon={<IconInfoCircle size={16} />}
-                  title="Sugerencia de mejora"
+                  title="Improvement Suggestion"
                   color="light-blue"
                   variant="light"
                   radius="lg"
@@ -279,8 +279,8 @@ function NewPost() {
                 >
                   <Stack style={{ paddingRight: "2.5rem" }}>
                     <Text size="sm" align="left">
-                      La IA ha detectado que tu comentario podría mejorarse.
-                      Aquí tienes una versión reformulada:
+                      AI has detected that your comment could be improved.
+                      Here's a reformulated version:
                     </Text>
                     <Paper p="sm" bg="gray.0" radius="sm">
                       <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
@@ -294,17 +294,17 @@ function NewPost() {
                         onClick={() => acceptAiSuggestion("content")}
                         radius="md"
                       >
-                        Aplicar sugerencia
+                        Apply suggestion
                       </Button>
                     </Group>
                   </Stack>
                 </Alert>
               )}
-              {/* Alerta de sugerencia de AI */}
+              {/* AI suggestion alert */}
               {aiSuggestionTitle && (
                 <Alert
                   icon={<IconInfoCircle size={16} />}
-                  title="Sugerencia de mejora"
+                  title="Improvement Suggestion"
                   color="light-blue"
                   variant="light"
                   radius="lg"
@@ -312,8 +312,8 @@ function NewPost() {
                 >
                   <Stack style={{ paddingRight: "2.5rem" }}>
                     <Text size="sm" align="left">
-                      La IA ha detectado que tu título podría mejorarse. Aquí
-                      tienes una versión reformulada:
+                      AI has detected that your title could be improved. Here
+                      is a reformulated version:
                     </Text>
                     <Paper p="sm" bg="gray.0" radius="sm">
                       <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
@@ -327,14 +327,14 @@ function NewPost() {
                         onClick={() => acceptAiSuggestion("title")}
                         radius="md"
                       >
-                        Aplicar sugerencia
+                        Apply suggestion
                       </Button>
                     </Group>
                   </Stack>
                 </Alert>
               )}
 
-              {/* Error de envío */}
+              {/* Submit error */}
               {errors.submit && (
                 <Alert
                   icon={<IconAlertCircle size={16} />}
@@ -346,14 +346,14 @@ function NewPost() {
                 </Alert>
               )}
 
-              {/* Botones de acción */}
+              {/* Action buttons */}
               <Group justify="space-between">
                 <Button
                   variant="subtle"
                   onClick={() => navigate("/")}
                   disabled={isSubmitting || isValidatingAI}
                 >
-                  Cancelar
+                  Cancel
                 </Button>
 
                 <Button
@@ -365,17 +365,17 @@ function NewPost() {
                   }
                 >
                   {isValidatingAI
-                    ? "Validando..."
+                    ? "Validating..."
                     : isSubmitting
-                    ? "Publicando..."
-                    : "Publicar Post"}
+                    ? "Publishing..."
+                    : "Publish Post"}
                 </Button>
               </Group>
 
               {isValidatingAI && (
                 <>
                   <Text italic c="dimmed">
-                    Analizando tu publicación con IA...
+                    Analyzing your post with AI...
                   </Text>
                 </>
               )}

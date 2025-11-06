@@ -15,49 +15,49 @@ import Welcome from "../pages/Welcome";
 
 const rutas = [
   { 
-    icon: IconHome2,
-    label: "Inicio",
-    route: "/home",
-    component: Home,
-    navbar: true
-  },
-  { 
     icon: IconSparkles,
     label: "Welcome",
     route: "/",
     component: Welcome,
+    navbar: false
+  },
+  { 
+    icon: IconHome2,
+    label: "Home",
+    route: "/home",
+    component: Home,
     navbar: true
   },
   {
-    label: "Comunidad",
+    label: "Community",
     route: "/comunidad",
     component: Comunidad,
     icon: IconUsers,
     navbar: true
   },
   {
-    label: "Mis publicaciones",
+    label: "My Posts",
     route: "/mis-publicaciones",
     component: MisPosts,
     icon: IconMessage,
     navbar: true
   },
   {
-    label: "Perfil",
+    label: "Profile",
     route: "/perfil",
     component: Perfil,
     icon: IconUser,
     navbar: true
   },
   // {
-  //   label: "Cerrar sesión",
+  //   label: "Logout",
   //   route: "/logout",
   //   component: Home,
   //   icon: IconLogout,
   //   navbar: true
   // },
   {
-    label: "Nueva Publicación",
+    label: "New Post",
     route: "/nueva-publicacion",
     component: NewPost,
     icon: IconMessage,

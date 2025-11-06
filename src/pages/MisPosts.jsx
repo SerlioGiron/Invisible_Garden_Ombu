@@ -9,39 +9,38 @@ import {
   Center,
   Loader,
   Paper,
-  Select,      // 1. Importar Select
-  TagsInput,   // 2. Importar TagsInput
+  Select,
+  TagsInput,
 } from "@mantine/core";
-import { IconPlus, IconFilter, IconSearch } from "@tabler/icons-react"; // 3. Importar iconos
+import { IconPlus, IconFilter, IconSearch } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import { useContract } from "../hooks/useContract";
 import PostCard from "../components/PostCard";
-import { categories } from "../services/contract"; // 4. Importar categorías
+import { categories } from "../services/contract";
 
 function MisPosts() {
   const navigate = useNavigate();
-  // 5. Añadir estados para filtros y búsqueda
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTags, setSearchTags] = useState([]);
 
   const { posts: allPosts, isLoadingPosts, userAddress, getPostsByAuthor } = useContract();
   const { postIds, isLoading: isLoadingIds } = getPostsByAuthor(userAddress);
 
-  // 6. Actualizar lógica de filtrado para incluir categoría y tags
+  // Filtering logic to include category and tags
   const userPosts = (allPosts || [])
-    .filter((post) => // Primero, filtrar por autor
+    .filter((post) => // First, filter by author
       (postIds || []).map((id) => parseInt(id.toString())).includes(post.id)
     )
-    .filter((post) => { // Luego, por categoría
+    .filter((post) => { // Then, by category
       return selectedCategory === "all" || post.category === selectedCategory;
     })
-    .filter((post) => { // Finalmente, por tags
+    .filter((post) => { // Finally, by tags
       if (searchTags.length === 0) {
         return true;
       }
       return post.topics && post.topics.some((tag) => searchTags.includes(tag));
     })
-    .sort((a, b) => b.id - a.id); // Ordenar por más reciente
+    .sort((a, b) => b.id - a.id); // Sort by most recent
 
   const handleNewPost = () => {
     navigate("/nueva-publicacion");
@@ -53,7 +52,7 @@ function MisPosts() {
         <Center style={{ height: "50vh" }}>
           <Stack align="center">
             <Loader size="lg" />
-            <Text c="dimmed">Cargando tus publicaciones...</Text>
+            <Text c="dimmed">Loading your posts...</Text>
           </Stack>
         </Center>
       </Container>
@@ -66,25 +65,25 @@ function MisPosts() {
         {/* Header */}
         <Group justify="space-between" align="center">
           <Title order={1} size="h2">
-            Mis Publicaciones
+            My Posts
           </Title>
         </Group>
         <Text align="left" c="dimmed" size="sm">
-          Aquí puedes ver, filtrar y buscar todas las publicaciones que has creado en el
+          Here you can view, filter and search all the posts you have created on the
           blockchain.
         </Text>
 
-        {/* 7. Añadir controles de filtro y búsqueda */}
+        {/* Filter and search controls */}
         <Group grow>
           <TagsInput
-            placeholder="Buscar por temas..."
+            placeholder="Search by topics..."
             value={searchTags}
             onChange={setSearchTags}
             leftSection={<IconSearch size={16} />}
             clearable
           />
           <Select
-            placeholder="Filtrar por categoría"
+            placeholder="Filter by category"
             data={categories}
             value={selectedCategory}
             onChange={setSelectedCategory}
@@ -97,14 +96,14 @@ function MisPosts() {
           {userPosts.length === 0 ? (
             <Paper p="xl" radius="md" style={{ textAlign: "center" }}>
               <Text c="dimmed" mb="md">
-                No se encontraron publicaciones con los filtros actuales.
+                No posts found with the current filters.
               </Text>
               <Button
                 variant="light"
                 onClick={handleNewPost}
                 leftSection={<IconPlus size={16} />}
               >
-                Crear tu primera publicación
+                Create your first post
               </Button>
             </Paper>
           ) : (
