@@ -28,13 +28,13 @@ function Welcome() {
         >
           <Stack align="center" justify="center" gap="md" h={200}>
             <div style={{ textAlign: "center" }}>
-              <Title size="h1" mb="md" align="center">
+              <Title size="h1" mb="md" align="center" c="black">
                 Welcome to OMBU! 🚀
               </Title>
-              <Text size="lg" align="center">
+              <Text size="lg" align="center" c="black">
                 The first decentralized zk social network for Invisible Garden members
               </Text>
-              <Text size="md" opacity={0.9} align="center">
+              <Text size="md" opacity={0.9} align="center" c="black">
                 Connect & share your honest feedback about the fellowship 
               </Text>
             </div>
@@ -48,7 +48,7 @@ function Welcome() {
                   leftSection={<IconPlus size={20} />}
                   onClick={() => navigate("/home")}
                 >
-                  Create Post
+                  Go to Home
                 </Button> 
             ) : (
               <Text size="sm" opacity={0.8} align="center">

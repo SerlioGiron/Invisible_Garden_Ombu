@@ -4,11 +4,13 @@ import { usePrivy } from '@privy-io/react-auth';
 import Navbar from './Navbar';
 import { useCreateIdentity } from './CreateIdentity';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 
 function Layout({ children }) {
   const [joinedTheGroup, setJoinedTheGroup] = useState(false);
   const [opened, { toggle }] = useDisclosure();
   const { login, logout, authenticated, ready } = usePrivy();
+  const navigate = useNavigate();
 
   // Automatically create Semaphore identity after wallet connection
   useCreateIdentity((identity) => {
@@ -19,16 +21,17 @@ function Layout({ children }) {
   useEffect(() => {
     if (ready && authenticated) {
       setJoinedTheGroup(true);
+      // Navigate to home after successful authentication
+      navigate("/home");
     } else {
       setJoinedTheGroup(false);
     }
-  }, [authenticated, ready]);
+  }, [authenticated, ready, navigate]);
 
   const handleLogin = async () => {
     try {
       await login();
-      // After successful login, authenticated will be true
-      // and the useEffect above will set joinedTheGroup to true
+      // Don't navigate here - let the useEffect handle it when authenticated becomes true
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -38,6 +41,8 @@ function Layout({ children }) {
     try {
       await logout();
       setJoinedTheGroup(false);
+      navigate("/")
+      
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -80,17 +85,17 @@ function Layout({ children }) {
         </AppShell.Navbar>
       )}
       <AppShell.Main 
-        style={{ 
-          position: 'relative', 
-          width: '100%',
-          maxWidth: '100%',
-          flex: 1,
-          background: 'linear-gradient(180deg, #1E64FA 0%, #78B4F0 50%, #C8DCB4 75%, #FFF0B4 100%)',
-          minHeight: '100vh'
-        }}
-        // style={{ position: 'relative', width: '100%' }}
+        // style={{ 
+        //   position: 'relative', 
+        //   width: '100%',
+        //   maxWidth: '100%',
+        //   flex: 1,
+        //   background: 'linear-gradient(180deg, #1E64FA 0%, #78B4F0 50%, #C8DCB4 75%, #FFF0B4 100%)',
+        //   minHeight: '100vh'
+        // }}
+        style={{ position: 'relative', width: '100%' }}
       >
-        <div style={{ width: '100%', maxWidth: '100%' }}>
+        <div style={{ width: '100%', padding: 20 }}>
           {children}
         </div>
       </AppShell.Main>
