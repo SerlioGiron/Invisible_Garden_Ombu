@@ -33,6 +33,7 @@ import { useNavigate } from "react-router";
 import PostCard from "../components/PostCard";
 import { categories } from "../services/contract";
 import { useContract } from "../hooks/useContract";
+import CreateIdentity from "../components/CreateIdentity";
 
 function Comunidad() {
   const navigate = useNavigate();
@@ -90,6 +91,10 @@ function Comunidad() {
     );
   }
 
+  const handleIdentityCreated = (identity) => {
+    console.log("Identity successfully created in Comunidad:", identity);
+  };
+
   return (
     <Container size="xl">
       <Stack gap="lg">
@@ -97,6 +102,7 @@ function Comunidad() {
         <Group justify="space-between" align="center">
           <Group>
             <Title size="h2">Comunidad Universitaria</Title>
+            <CreateIdentity onIdentityCreated={handleIdentityCreated} />
           </Group>
           <Button
             leftSection={<IconPlus size={16} />}

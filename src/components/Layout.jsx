@@ -2,42 +2,100 @@ import { useDisclosure } from '@mantine/hooks';
 import { AppShell, Group, Burger, Button } from '@mantine/core';
 import { usePrivy } from '@privy-io/react-auth';
 import Navbar from './Navbar';
+import { useCreateIdentity } from './CreateIdentity';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 
 function Layout({ children }) {
+  const [joinedTheGroup, setJoinedTheGroup] = useState(false);
   const [opened, { toggle }] = useDisclosure();
-  const { login, logout, authenticated } = usePrivy();
+  const { login, logout, authenticated, ready } = usePrivy();
+  const navigate = useNavigate();
+
+  // Automatically create Semaphore identity after wallet connection
+  useCreateIdentity((identity) => {
+    console.log("✅ Identity created after wallet connection:", identity.commitment.toString());
+  });
+
+  // Update joinedTheGroup when authentication changes
+  useEffect(() => {
+    if (ready && authenticated) {
+      setJoinedTheGroup(true);
+      // Navigate to home after successful authentication
+      navigate("/home");
+    } else {
+      setJoinedTheGroup(false);
+    }
+  }, [authenticated, ready, navigate]);
+
+  const handleLogin = async () => {
+    try {
+      await login();
+      // Don't navigate here - let the useEffect handle it when authenticated becomes true
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setJoinedTheGroup(false);
+      navigate("/")
+      
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <AppShell
       header={{ height: 80 }}
       footer={{ height: 60 }}
-      navbar={{ width: 250, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      navbar={joinedTheGroup ? { width: 250, breakpoint: 'sm', collapsed: { mobile: !opened } } : undefined}
       transitionDuration={350}
       transitionTimingFunction="ease"
-      padding="sm"
+      padding={0}
+      style={{
+        background: 'transparent'
+      }}
     >
       <AppShell.Header>
         <Group h="100%" px="lg" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            {joinedTheGroup && (
+              <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            )}
             <img src="src/assets/logo.png" alt="Logo" style={{ height: 90 }} />
           </Group>
           {authenticated ? (
-            <Button onClick={logout} variant="outline">
+            <Button onClick={handleLogout} variant="outline">
               Disconnect
             </Button>
           ) : (
-            <Button onClick={login}>
+            <Button onClick={handleLogin}>
               Connect Wallet
             </Button>
           )}
         </Group>
       </AppShell.Header>
-      <AppShell.Navbar p="md">
-        <Navbar />
-      </AppShell.Navbar>
-      <AppShell.Main style={{ position: 'relative', width: '100%' }}>
-        <div style={{ width: '100%' }}>
+      {joinedTheGroup && (
+        <AppShell.Navbar p="md">
+          <Navbar />
+        </AppShell.Navbar>
+      )}
+      <AppShell.Main 
+        // style={{ 
+        //   position: 'relative', 
+        //   width: '100%',
+        //   maxWidth: '100%',
+        //   flex: 1,
+        //   background: 'linear-gradient(180deg, #1E64FA 0%, #78B4F0 50%, #C8DCB4 75%, #FFF0B4 100%)',
+        //   minHeight: '100vh'
+        // }}
+        style={{ position: 'relative', width: '100%' }}
+      >
+        <div style={{ width: '100%', padding: 20 }}>
           {children}
         </div>
       </AppShell.Main>

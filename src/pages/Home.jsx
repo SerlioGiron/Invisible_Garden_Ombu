@@ -3,8 +3,6 @@ import {
   Container,
   Title,
   Text,
-  Grid,
-  Paper,
   Group,
   Button,
   Stack,
@@ -12,7 +10,7 @@ import {
   SimpleGrid,
   Card,
   Avatar,
-  Divider,
+  Paper,
 } from "@mantine/core";
 import {
   IconTrendingUp,
@@ -22,14 +20,16 @@ import {
   IconUser,
   IconArrowUp,
   IconArrowDown,
-  IconMessage,
+  IconPlus,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import { useContract } from "../hooks/useContract";
+import { usePrivy } from "@privy-io/react-auth";
 
 function Home() {
   const navigate = useNavigate();
-  const { posts, userAddress } = useContract();
+  const { posts } = useContract();
+  const { authenticated } = usePrivy();
 
   // Estadísticas rápidas
   const totalPosts = posts.length;
@@ -52,7 +52,7 @@ function Home() {
       color: "orange",
     },
     {
-      title: "Usuarios Activos",
+      title: "Active Users",
       value: new Set(posts.map((p) => p.authorAddress)).size,
       icon: IconUsers,
       color: "green",
@@ -62,46 +62,6 @@ function Home() {
   return (
     <Container size="xl">
       <Stack gap="xl">
-        {/* Hero Section */}
-        <Paper
-          p="xl"
-          radius="md"
-          style={{
-            color: "white",
-            background:
-              "linear-gradient(90deg,rgba(2, 0, 110, 1) 0%, rgba(10, 7, 175, 1) 30%, rgba(80, 103, 255, 1) 58%, rgba(84, 14, 232, 1) 100%)",
-          }}
-        >
-          <Group justify="center" h={200}>
-            <div>
-              <Title size="h1" mb="md" align="center">
-                ¡Bienvenido a REDE! 🚀
-              </Title>
-              <Text size="lg">
-                La primera red social descentralizada para estudiantes
-                universitarios
-              </Text>
-              <Text size="md" opacity={0.9}>
-                Conecta, comparte y construye comunidad en el blockchain
-              </Text>
-            </div>
-            {/* {userAddress ? (
-              <Button
-                size="lg"
-                variant="white"
-                leftSection={<IconPlus size={20} />}
-                onClick={() => navigate("/nueva-publicacion")}
-              >
-                Crear Post
-              </Button>
-            ) : (
-              <Text size="sm" opacity={0.8}>
-                Conecta tu wallet para comenzar
-              </Text>
-            )} */}
-          </Group>
-        </Paper>
-
         {/* Estadísticas rápidas */}
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
           {statsCards.map((stat) => {
@@ -130,9 +90,9 @@ function Home() {
         {/* Posts recientes */}
         <div>
           <Group justify="space-between" mb="md">
-            <Title size="h3">Posts recientes</Title>
+            <Title size="h3">Recent Posts</Title>
             <Button variant="subtle" onClick={() => navigate("/comunidad")}>
-              Ver todos
+              View all
             </Button>
           </Group>
 
@@ -169,11 +129,11 @@ function Home() {
                   <Group gap="3">
                     <IconArrowUp color="blue" size={14} />
                     <Text size="xs" c="dimmed">
-                       {post.upvotes} •
+                      {post.upvotes} •
                     </Text>
                     <IconArrowDown color="red" size={14} />
                     <Text size="xs" c="dimmed">
-                      {post.downvotes} • 
+                      {post.downvotes} •
                     </Text>
                     <IconMessageCircle color="orange" size={14} />
                     <Text size="xs" c="dimmed">
@@ -189,13 +149,13 @@ function Home() {
                 size={48}
                 style={{ opacity: 0.5, marginBottom: "1rem" }}
               />
-              <Text>No hay posts aún</Text>
+              <Text>No posts yet</Text>
               <Button
                 mt="md"
                 onClick={() => navigate("/nueva-publicacion")}
-                disabled={!userAddress}
+                disabled={!authenticated}
               >
-                Crear el primer post
+                Create the first post
               </Button>
             </Paper>
           )}
@@ -206,18 +166,18 @@ function Home() {
           <Card padding="md" radius="md" withBorder>
             <Group mb="md">
               <IconUser size={24} />
-              <Title size="h4">Mi Perfil</Title>
+              <Title size="h4">My Profile</Title>
             </Group>
             <Text size="sm" c="dimmed" mb="md">
-              Ve tus posts, configuración y estadísticas
+              View your posts, settings and statistics
             </Text>
             <Button
               variant="light"
               fullWidth
               onClick={() => navigate("/perfil")}
-              disabled={!userAddress}
+              disabled={!authenticated}
             >
-              Ver Perfil
+              View Profile
             </Button>
           </Card>
 
@@ -227,15 +187,15 @@ function Home() {
               <Title size="h4">Trending</Title>
             </Group>
             <Text size="sm" c="dimmed" mb="md">
-              Explora los posts más populares en la comunidad
+              Explore the most popular posts in the community
             </Text>
             <Button
               variant="light"
               fullWidth
               onClick={() => navigate("/comunidad")}
-              disabled={!userAddress}
+              disabled={!authenticated}
             >
-              Ver posts trending
+              View trending posts
             </Button>
           </Card>
         </SimpleGrid>
