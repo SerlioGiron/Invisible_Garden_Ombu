@@ -1,57 +1,60 @@
-# **REDE**
+# OMBU
 
-🔗 **Demo:** [Ver demo aquí](https://hackathon-eth-jaguar.onrender.com)
+🔗 Demo: 
 
-Este proyecto busca crear un espacio seguro y abierto para que los estudiantes expresen sus experiencias y consejos dentro de la universidad. A través de un agente de IA, cada comentario es evaluado para evitar palabras ofensivas y, en caso necesario, se sugieren reformulaciones que fomenten el respeto y la construcción de ideas. Una vez validados, los comentarios se almacenan en la blockchain de Ethereum, garantizando inmutabilidad, seguridad y transparencia. Los estudiantes pueden expresar su acuerdo o desacuerdo mediante votos, manteniendo siempre el anonimato de su identidad, lo que refuerza la libertad de expresión dentro de un entorno descentralizado y confiable.
+**Ombu** is a safe space for students to anonymously review their teachers and courses without fear of retaliation. Named after the Swedish Ombudsman—someone who investigates complaints against organizations or public authorities—Ombu empowers students to speak freely about their educational experiences.
 
----
-
-## **Requisitos previos**
-
-* **Node.js (>= 18.x)** debe estar instalado en tu sistema.
-* **npm** (incluido con Node).
+Our AI agent moderates content by filtering offensive language and suggesting respectful alternatives, ensuring constructive dialogue. Once validated, comments are stored privately on blockchain with zero-knowledge proofs, providing immutability, security, and transparency. Other students can vote anonymously on reviews, fostering free expression in a decentralized, trustworthy environment built on privacy-preserving technologies like Semaphore and authenticated through Privy.
 
 ---
 
-## **Configuración**
+## Prerequisites
 
-1. Clonar el repositorio:
+- Node.js (>= 18.x)
+- npm (included with Node.js)
+
+---
+
+## Setup
+
+1. Clone the repository:
 
 ```bash
-git clone https://github.com/pamelagiselle8/Hackathon_ETH_Jaguar
-cd Hackathon_ETH_Jaguar
+git clone https://github.com/SerlioGiron/Invisible_Garden_Ombu.git
+cd Invisible_Garden_Ombu
 ```
 
-2. Instalar dependencias:
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Actualizar el archivo `.env_template`, copiarlo a `.env` y completar los valores requeridos, incluyendo el **URL del agente de IA** que corre en el otro repositorio.
+3. Copy and update the environment file:
 
-Ejemplo de variables:
+Copy `.env_template` to `.env` and fill in the required values, including the URL for the AI agent (the agent runs in a separate repo).
+
+Example variables:
 
 ```env
-VITE_LOGO=src/assets/logo.svg
+VITE_LOGO=src/assets/imagotipo.png
 VITE_PUBLIC_RPC_URL="https://arbitrum-sepolia.drpc.org"
 VITE_PUBLIC_CHAIN_ID="421614"
-VITE_PUBLIC_CONTRACT_ADDRESS="0xA3d4213c9f492EC63d61d734e0c7a9C6eFcc79c0"
+VITE_PUBLIC_CONTRACT_ADDRESS=""
 VITE_AI_BACKEND_URL="http://localhost:3000"
+VITE_PRIVY_APP_ID="your-privy-app-id"
+VITE_PRIVY_CLIENT_ID="your-privy-client-id"
+VITE_WALLETCONNECT_PROJECT_ID="your-walletconnect-project-id"
 ```
 
-El agente se encuentra en este repositorio: [ModeloHackathonAI](https://github.com/Diazgerard/ModeloHackathonAI). Asegúrate de tenerlo corriendo en tu máquina para que la DApp pueda validar los comentarios.
+The AI agent is available in this repository: [ModeloHackathonAI](https://github.com/Diazgerard/ModeloHackathonAI). Make sure the agent is running locally so the DApp can validate comments.
 
 ---
 
-## **Ejecutar el proyecto**
+## Run the project
 
 ```bash
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:3000`.
-
----
-
-⚡ Ahora los estudiantes pueden iniciar sesión, compartir comentarios validados y participar con opiniones inmutables en la blockchain.
+The application will be available at `http://localhost:5173`.
