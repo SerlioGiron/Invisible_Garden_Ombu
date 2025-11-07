@@ -1,5 +1,5 @@
 import { useDisclosure } from '@mantine/hooks';
-import { AppShell, Group, Burger, Button } from '@mantine/core';
+import { AppShell, Group, Burger, Button, Loader, Text, Stack } from '@mantine/core';
 import { usePrivy } from '@privy-io/react-auth';
 import Navbar from './Navbar';
 import { useCreateIdentity } from './CreateIdentity';
@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router';
 
 function Layout({ children }) {
   const [joinedTheGroup, setJoinedTheGroup] = useState(false);
+  const [isJoiningGroup, setIsJoiningGroup] = useState(false);
   const [opened, { toggle }] = useDisclosure();
   const { login, logout, authenticated, ready } = usePrivy();
   const navigate = useNavigate();
@@ -15,16 +16,19 @@ function Layout({ children }) {
   // Automatically create Semaphore identity after wallet connection
   useCreateIdentity((identity) => {
     console.log("✅ Identity created after wallet connection:", identity.commitment.toString());
+    setIsJoiningGroup(false);
   });
 
   // Update joinedTheGroup when authentication changes
   useEffect(() => {
     if (ready && authenticated) {
+      setIsJoiningGroup(true);
       setJoinedTheGroup(true);
       // Navigate to home after successful authentication
       navigate("/home");
     } else {
       setJoinedTheGroup(false);
+      setIsJoiningGroup(false);
     }
   }, [authenticated, ready, navigate]);
 
@@ -95,9 +99,16 @@ function Layout({ children }) {
         // }}
         style={{ position: 'relative', width: '100%' }}
       >
-        <div style={{ width: '100%', padding: 20 }}>
-          {children}
-        </div>
+        {isJoiningGroup ? (
+          <Stack align="center" justify="center" style={{ minHeight: '50vh' }}>
+            <Loader size="lg" />
+            <Text>Joining Semaphore group...</Text>
+          </Stack>
+        ) : (
+          <div style={{ width: '100%', padding: 20 }}>
+            {children}
+          </div>
+        )}
       </AppShell.Main>
       <AppShell.Footer p="md" style={{ fontSize: '12px', textAlign: 'center' }} c="dimmed">© REDE 2025 - Powered by Blockchain</AppShell.Footer>
     </AppShell>
