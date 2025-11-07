@@ -1,44 +1,55 @@
 import { useDisclosure } from '@mantine/hooks';
 import { AppShell, Group, Burger, Button, Loader, Text, Stack } from '@mantine/core';
-import { AppShell, Group, Burger, Button, Text } from '@mantine/core';
 import { usePrivy } from '@privy-io/react-auth';
 import Navbar from './Navbar';
-import { useCreateIdentity } from './CreateIdentity';
-import { useState, useEffect } from 'react';
+import CreateIdentity from './CreateIdentity';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 
 function Layout({ children }) {
   const [joinedTheGroup, setJoinedTheGroup] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
+  const [identityCommitment, setIdentityCommitment] = useState(null);
   const [opened, { toggle }] = useDisclosure();
   const { login, logout, authenticated, ready } = usePrivy();
   const navigate = useNavigate();
 
-  // Automatically create Semaphore identity after wallet connection
-  useCreateIdentity((identity) => {
-    console.log("✅ Identity created after wallet connection:", identity.commitment.toString());
-    setIsJoiningGroup(false);
-  });
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storedCommitment = localStorage.getItem('ombuSemaphoreCommitment');
+    if (storedCommitment) {
+      setIdentityCommitment(storedCommitment);
+      console.log("storedCommitment", storedCommitment)
+    }
+  }, []);
+
+ 
+  useEffect(() => {
+    if (ready && authenticated && !identityCommitment) {
+      return <CreateIdentity/>
+    }
+  }, [ready, authenticated, identityCommitment]);
 
   // Update joinedTheGroup when authentication changes
   useEffect(() => {
-    if (ready && authenticated) {
-      setIsJoiningGroup(true);
+    if (ready && authenticated && identityCommitment) {
+     
       setJoinedTheGroup(true);
       // Navigate to home after successful authentication
-      navigate("/home");
-    } else {
-      setJoinedTheGroup(false);
-      setIsJoiningGroup(false);
-    }
-  }, [authenticated, ready, navigate]);
+      navigate('/home');
+    } 
+  }, [authenticated, ready, navigate, identityCommitment]);
+
+ 
 
   const handleLogin = async () => {
     try {
       await login();
       // Don't navigate here - let the useEffect handle it when authenticated becomes true
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error('Login failed:', error);
     }
   };
 
@@ -46,10 +57,9 @@ function Layout({ children }) {
     try {
       await logout();
       setJoinedTheGroup(false);
-      navigate("/")
-      
+      navigate('/');
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error('Logout failed:', error);
     }
   };
 
@@ -62,7 +72,7 @@ function Layout({ children }) {
       transitionTimingFunction="ease"
       padding={0}
       style={{
-        background: 'transparent'
+        background: 'transparent',
       }}
     >
       <AppShell.Header>
@@ -71,26 +81,24 @@ function Layout({ children }) {
             {joinedTheGroup && (
               <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             )}
-             <Text 
-                size="xl" 
-                opacity={1} 
-                align="center"
-                style={{
-                  fontWeight: 900
-                }}
-                c="black"
-              >
-                OMBU
-              </Text>
+            <Text
+              size="xl"
+              opacity={1}
+              align="center"
+              style={{
+                fontWeight: 900,
+              }}
+              c="black"
+            >
+              OMBU
+            </Text>
           </Group>
           {authenticated ? (
             <Button onClick={handleLogout} variant="outline">
               Disconnect
             </Button>
           ) : (
-            <Button onClick={handleLogin}>
-              Connect Wallet
-            </Button>
+            <Button onClick={handleLogin}>Connect Wallet</Button>
           )}
         </Group>
       </AppShell.Header>
@@ -99,15 +107,15 @@ function Layout({ children }) {
           <Navbar />
         </AppShell.Navbar>
       )}
-      <AppShell.Main 
-        style={{ 
-          position: 'relative', 
+      <AppShell.Main
+        style={{
+          position: 'relative',
           width: '100%',
           maxWidth: '100%',
           flex: 1,
           background: 'linear-gradient(180deg, #2E86AB 0%, #A9D5B3 50%, #FFF9C4 100%)',
           minHeight: '100vh',
-          backgroundAttachment: 'fixed'
+          backgroundAttachment: 'fixed',
         }}
       >
         {isJoiningGroup ? (
@@ -121,7 +129,9 @@ function Layout({ children }) {
           </div>
         )}
       </AppShell.Main>
-      <AppShell.Footer p="md" style={{ fontSize: '12px', textAlign: 'center' }} c="dimmed">© REDE 2025 - Powered by Blockchain</AppShell.Footer>
+      <AppShell.Footer p="md" style={{ fontSize: '12px', textAlign: 'center' }} c="dimmed">
+        © OMBU 2025 - Powered by Blockchain
+      </AppShell.Footer>
     </AppShell>
   );
 }
