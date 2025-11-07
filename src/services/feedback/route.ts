@@ -1,22 +1,18 @@
-import { Contract, InfuraProvider, JsonRpcProvider, Wallet } from "ethers"
+import { Contract, JsonRpcProvider, Wallet } from "ethers"
 import OmbuArtifact from "../../../out/Ombu.sol/Ombu.json"
 
 export async function POST(req: Request) {
-    if (typeof process.env.ETHEREUM_PRIVATE_KEY !== "string") {
-        throw new Error("Please, define ETHEREUM_PRIVATE_KEY in your .env file")
+    if (typeof process.env.PRIVATE_KEY !== "string") {
+        throw new Error("Please, define PRIVATE_KEY in your .env file")
     }
 
-    const ethereumPrivateKey = process.env.ETHEREUM_PRIVATE_KEY
-    const ethereumNetwork = process.env.NEXT_PUBLIC_DEFAULT_NETWORK as string
-    const infuraApiKey = process.env.NEXT_PUBLIC_INFURA_API_KEY as string
-    const contractAddress = process.env.NEXT_PUBLIC_FEEDBACK_CONTRACT_ADDRESS as string
+    const privateKey = process.env.PRIVATE_KEY
+    const rpcUrl = process.env.RPC_URL || process.env.VITE_PUBLIC_RPC_URL as string
+    const contractAddress = process.env.VITE_PUBLIC_CONTRACT_ADDRESS as string
 
-    const provider =
-        ethereumNetwork === "localhost"
-            ? new JsonRpcProvider("http://127.0.0.1:8545")
-            : new InfuraProvider(ethereumNetwork, infuraApiKey)
+    const provider = new JsonRpcProvider(rpcUrl)
 
-    const signer = new Wallet(ethereumPrivateKey, provider)
+    const signer = new Wallet(privateKey, provider)
     const contract = new Contract(contractAddress, OmbuArtifact.abi, signer)
 
     const { feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points } = await req.json()
