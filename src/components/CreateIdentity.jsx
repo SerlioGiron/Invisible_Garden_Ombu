@@ -17,6 +17,7 @@ export function useCreateIdentity() {
     const [commitment, setCommitment] = useState(null);
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState(null);
+    const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
 
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
         hash,
@@ -25,12 +26,14 @@ export function useCreateIdentity() {
     // Load commitment from localStorage on mount
     useEffect(() => {
         if (typeof window === "undefined") {
+            setHasCheckedStorage(true);
             return;
         }
         const storedCommitment = localStorage.getItem("ombuSemaphoreCommitment");
         if (storedCommitment) {
             setCommitment(storedCommitment);
         }
+        setHasCheckedStorage(true);
     }, []);
 
     useEffect(() => {
@@ -38,6 +41,10 @@ export function useCreateIdentity() {
             identityCreatedRef.current = false;
             setIsCreating(false);
             setError(null);
+            return;
+        }
+
+        if (!hasCheckedStorage) {
             return;
         }
 
@@ -80,13 +87,13 @@ export function useCreateIdentity() {
                     privateKey: newIdentity.privateKey ? "present" : "missing",
                 });
 
-                console.log("🔵 TEST: Adding member to Semaphore group...");
-                await writeContract({
-                    address: CONTRACT_CONFIG.address,
-                    abi: CONTRACT_CONFIG.abi,
-                    functionName: "addMember",
-                    args: [DEFAULT_GROUP_ID, newIdentity.commitment],
-                });
+                // console.log("🔵 TEST: Adding member to Semaphore group...");
+                // await writeContract({
+                //     address: CONTRACT_CONFIG.address,
+                //     abi: CONTRACT_CONFIG.abi,
+                //     functionName: "addMember",
+                //     args: [DEFAULT_GROUP_ID, newIdentity.commitment],
+                // });
 
                 if (typeof window !== "undefined") {
                     try {
@@ -123,7 +130,7 @@ export function useCreateIdentity() {
         return () => {
             cancelled = true;
         };
-    }, [ready, authenticated, wallets, writeContract, commitment]);
+    }, [ready, authenticated, wallets, writeContract, commitment, hasCheckedStorage]);
 
     useEffect(() => {
         if (isConfirming) {
