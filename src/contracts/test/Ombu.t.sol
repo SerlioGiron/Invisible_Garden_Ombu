@@ -3,9 +3,9 @@ pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {Ombu} from "../src/Ombu.sol";
-import {ISemaphoreGroups} from "../src/ISemaphoreGroups.sol";
-import {OmbuPost} from "../src/structs.sol";
+import {Ombu} from "../Ombu.sol";
+import {ISemaphoreGroups} from "../ISemaphoreGroups.sol";
+import {OmbuPost} from "../structs.sol";
 
 contract OmbuTest is Test {
     // semaphore arbitrum sepolia address:0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D
