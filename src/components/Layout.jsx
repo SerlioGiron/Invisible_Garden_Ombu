@@ -1,6 +1,5 @@
 import { useDisclosure } from '@mantine/hooks';
 import { AppShell, Group, Burger, Button, Loader, Text, Stack } from '@mantine/core';
-import { AppShell, Group, Burger, Button, Text } from '@mantine/core';
 import { usePrivy } from '@privy-io/react-auth';
 import Navbar from './Navbar';
 import { useCreateIdentity } from './CreateIdentity';
