@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Identity } from "@semaphore-protocol/identity";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { CONTRACT_CONFIG, DEFAULT_GROUP_ID } from "../services/contract";
 
 /**
  * Hook that automatically creates a Semaphore identity when user connects wallet
@@ -10,6 +12,12 @@ export function useCreateIdentity(onIdentityCreated) {
     const { ready, authenticated } = usePrivy();
     const { wallets } = useWallets();
     const identityCreatedRef = useRef(false);
+    const { writeContract, data: hash } = useWriteContract();
+    
+    // Esperar confirmación de la transacción
+    const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+        hash,
+    });
 
     useEffect(() => {
         const createIdentity = async () => {
@@ -53,6 +61,15 @@ export function useCreateIdentity(onIdentityCreated) {
                     privateKey: newIdentity.privateKey ? "present" : "missing"
                 });
 
+                // Agregar el usuario al grupo de Semaphore
+                console.log("🔵 TEST: Adding member to Semaphore group...");
+                await writeContract({
+                    address: CONTRACT_CONFIG.address,
+                    abi: CONTRACT_CONFIG.abi,
+                    functionName: "addMember",
+                    args: [DEFAULT_GROUP_ID, newIdentity.commitment],
+                });
+
                 if (onIdentityCreated) {
                     onIdentityCreated(newIdentity);
                 }
@@ -67,7 +84,17 @@ export function useCreateIdentity(onIdentityCreated) {
         };
 
         createIdentity();
-    }, [ready, authenticated, wallets, onIdentityCreated]);
+    }, [ready, authenticated, wallets, onIdentityCreated, writeContract]);
+
+    // Mostrar estado de la transacción
+    useEffect(() => {
+        if (isConfirming) {
+            console.log("⏳ TEST: Waiting for transaction confirmation...");
+        }
+        if (isConfirmed) {
+            console.log("✅ TEST: Member added to Semaphore group successfully!");
+        }
+    }, [isConfirming, isConfirmed]);
 
     // Reset when user disconnects
     useEffect(() => {
