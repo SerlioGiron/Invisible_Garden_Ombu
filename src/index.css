@@ -13,7 +13,7 @@
 }
 
 html {
-  background: linear-gradient(180deg, #1E64FA 0%, #78B4F0 50%, #C8DCB4 75%, #FFF0B4 100%);
+  background: linear-gradient(180deg, #2E86AB 0%, #A9D5B3 50%, #FFF9C4 100%);
   background-attachment: fixed;
   min-height: 100vh;
 }
@@ -33,7 +33,7 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #1E64FA 0%, #78B4F0 50%, #C8DCB4 75%, #FFF0B4 100%);
+  background: linear-gradient(180deg, #2E86AB 0%, #A9D5B3 50%, #FFF9C4 100%);
   background-attachment: fixed;
 }
 

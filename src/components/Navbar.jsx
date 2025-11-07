@@ -7,7 +7,7 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Encontrar el índice activo basado en la ruta actual
+  // Find the active index based on the current route
   const activeIndex = rutas.findIndex(ruta => ruta.route === location.pathname);
   const [active, setActive] = useState(activeIndex >= 0 ? activeIndex : 0);
 
@@ -20,7 +20,7 @@ function Navbar() {
     navigate(ruta.route);
   };
 
-  // Filtrar solo las rutas que deben aparecer en el navbar
+  // Filter only the routes that should appear in the navbar
   const navbarRoutes = rutas.filter(ruta => ruta.navbar);
 
   const links = navbarRoutes.map((ruta, index) => (
@@ -37,7 +37,7 @@ function Navbar() {
   return (
     <nav className="navbar">
       <Center>
-        {/* Logo aquí si lo necesitas */}
+        {/* Logo here if needed */}
       </Center>
 
       <div className="navbarMain">

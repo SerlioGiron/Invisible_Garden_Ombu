@@ -10,6 +10,7 @@ import {
 import { IconPlus } from "@tabler/icons-react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useNavigate } from "react-router";
+import welcomeBackground from "../assets/welcome-background.png";
 
 function Welcome() {
   const { authenticated } = usePrivy();
@@ -23,11 +24,20 @@ function Welcome() {
           radius="md"
           style={{
             color: "white",
-            background: "transparent",
+            backgroundImage: `url(${welcomeBackground})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            position: "relative",
           }}
         >
-          <Stack align="center" justify="center" gap="md" h={200}>
-            <div style={{ textAlign: "center" }}>
+          <Stack align="center" justify="center" gap="md" style={{ minHeight: "400px", position: "relative", zIndex: 1 }}>
+            <div style={{ 
+              textAlign: "center",
+              padding: "2rem",
+              borderRadius: "12px",
+              backdropFilter: "blur(10px)"
+            }}>
               <Title size="h1" mb="md" align="center" c="black">
                 Welcome to OMBU! 🚀
               </Title>
@@ -39,9 +49,7 @@ function Welcome() {
               </Text>
             </div>
             {authenticated ? (
-            //   <Text size="sm" opacity={0.8} align="center" c="red">
-            //     waiting to join the IG Group
-            //   </Text>
+           
                <Button
                   size="lg"
                   variant="white"
@@ -51,7 +59,17 @@ function Welcome() {
                   Go to Home
                 </Button> 
             ) : (
-              <Text size="sm" opacity={0.8} align="center">
+              <Text 
+                size="sm" 
+                opacity={0.9} 
+                align="center"
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "8px",
+                  fontWeight: 600
+                }}
+                c="black"
+              >
                 Connect your wallet to get started
               </Text>
             )}
