@@ -25,7 +25,7 @@ function Navbar() {
 
   const links = navbarRoutes.map((ruta, index) => (
     <NavLink
-      key={ruta.label}
+      key={index}
       label={ruta.label}
       leftSection={<ruta.icon size={20} stroke={1.5} />}
       active={location.pathname === ruta.route}

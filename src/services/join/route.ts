@@ -1,0 +1,33 @@
+import { Contract, JsonRpcProvider, Wallet } from "ethers"
+import OmbuArtifact from "../../../out/Ombu.sol/Ombu.json"
+
+export async function POST(req: Request) {
+    if (typeof process.env.PRIVATE_KEY !== "string") {
+        throw new Error("Please, define PRIVATE_KEY in your .env file")
+    }
+
+    const privateKey = process.env.PRIVATE_KEY
+    const rpcUrl = process.env.RPC_URL || process.env.VITE_PUBLIC_RPC_URL as string
+    const contractAddress = process.env.VITE_PUBLIC_CONTRACT_ADDRESS as string
+
+    const provider = new JsonRpcProvider(rpcUrl)
+
+    const signer = new Wallet(privateKey, provider)
+    const contract = new Contract(contractAddress, OmbuArtifact.abi, signer)
+
+    const { identityCommitment } = await req.json()
+
+    try {
+        const transaction = await contract.joinGroup(identityCommitment)
+
+        await transaction.wait()
+
+        return new Response("Success", { status: 200 })
+    } catch (error: any) {
+        console.error(error)
+
+        return new Response(`Server error: ${error}`, {
+            status: 500
+        })
+    }
+}
