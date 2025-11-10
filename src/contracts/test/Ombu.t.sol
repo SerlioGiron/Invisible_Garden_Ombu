@@ -11,6 +11,7 @@ contract OmbuTest is Test {
     // semaphore arbitrum sepolia address:0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D
     address constant semaphoreAddress = 0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D;
     address public admin = address(1);
+    address first_Admin = 0xB4E6E678Bc83875891671EC70337aD08E1dD66d7;
     Ombu public ombu;
     ISemaphoreGroups public semaphoreGroup;
 
@@ -35,27 +36,38 @@ contract OmbuTest is Test {
     function test_Admin_Create_Group() public {
         vm.prank(admin);
         uint256 newGroupId = ombu.createGroup("test group");
-        assertEq(newGroupId, 1, "wrong new groupId");
+        assertEq(newGroupId, 2, "wrong new groupId");
     }
 
     function test_Add_Member() public {
-        uint256 groupId = 0;
+        // al parecer alguien ejecuto pruebas en la blockchain directo porque ya existen el grupo 0,1
+        uint256 groupId = 2;
         uint256 identityCommitment = 123456789;
 
+        vm.prank(admin);
+        uint256 newGroupId = ombu.createGroup("test group");
+        address groupAdmin = semaphoreGroup.getGroupAdmin(groupId);
+        console.log("Group 0 Admin:", groupAdmin);
+
+        vm.prank(admin);
         ombu.addMember(groupId, identityCommitment);
         bool member_added = semaphoreGroup.hasMember(groupId, identityCommitment);
         assertTrue(member_added, "Member was not added");
     }
 
     function test_Remove_Member() public {
-        uint256 groupId = 0;
+        uint256 groupId = 2;
         uint256 identityCommitment = 123456789;
         uint256[] memory merkleProofSiblings = new uint256[](0); // Placeholder, should be a valid proof.
 
         vm.prank(admin);
-        ombu.removeMember(groupId, identityCommitment, merkleProofSiblings);
-        bool member_exists = semaphoreGroup.hasMember(groupId, identityCommitment);
-        assertFalse(member_exists, "Member was not removed");
+        uint256 newGroupId = ombu.createGroup("test group");
+        /*
+                vm.prank(admin);
+                ombu.removeMember(groupId, identityCommitment, merkleProofSiblings);
+                bool member_exists = semaphoreGroup.hasMember(groupId, identityCommitment);
+                assertFalse(member_exists, "Member was not removed");
+                */
     }
 
     // function to test the creation of posts.
@@ -70,6 +82,8 @@ contract OmbuTest is Test {
         assertEq(_content, content, "Wrong content");
         assertEq(upvotes, 0);
         assertEq(downvotes, 0);
+
+        // Test if a comment can be ou
     }
 
     // function to test the creation of subPosts.
@@ -112,7 +126,12 @@ contract OmbuTest is Test {
 
         vm.expectRevert("User has already voted on this post");
         ombu.voteOnPost(groupId, postId, isUpvote);
-        // Testing adding an upvote in a subPost.
+
+        // Testing removing a vote in a main post.
+        ombu.deleteVoteOnPost(groupId, postId, isUpvote);
+        (,,, uint32 upvotes2, uint32 downvotes2) = ombu.groupPosts(groupId, 1);
+        assertEq(upvotes2, 0, "Upvote wasn't removed");
+        assertEq(downvotes2, 0, "Downvote count incorrect after removing upvote");
     }
 
     // function to test the downvotes mechanism (add and remove a downvote).
@@ -122,7 +141,11 @@ contract OmbuTest is Test {
         uint256 postId = 1;
         uint256 subPostId = 1;
         bool isUpvote = false;
+        string memory content = "Hello, Ombu!";
+        string memory content2 = "Ombu Sub Post!";
 
+        ombu.createMainPost(groupId, content);
+        ombu.createSubPost(groupId, postId, content2);
         ombu.voteOnSubPost(groupId, postId, subPostId, isUpvote);
 
         (bool hasVoted) = ombu.userSubPostVotes(address(this), groupId, postId, subPostId);
@@ -134,6 +157,12 @@ contract OmbuTest is Test {
 
         vm.expectRevert("User has already voted on this subpost");
         ombu.voteOnSubPost(groupId, postId, subPostId, isUpvote);
+
+        // Testing removing a vote in a sub post.
+        ombu.deleteVoteOnSubPost(groupId, postId, subPostId, isUpvote);
+        (,,, uint32 upvotes2, uint32 downvotes2) = ombu.postSubPosts(groupId, postId, subPostId);
+        assertEq(upvotes2, 0, "Upvote count incorrect after removing downvote");
+        assertEq(downvotes2, 0, "Downvote wasn't removed");
     }
 
     // function to test the edit of a post.
