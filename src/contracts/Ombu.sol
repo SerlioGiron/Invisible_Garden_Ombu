@@ -5,8 +5,6 @@ import {ISemaphore} from "./ISemaphore.sol";
 import {ISemaphoreGroups} from "./ISemaphoreGroups.sol";
 import {OmbuPost} from "./structs.sol";
 
-import {console} from "forge-std/console.sol";
-
 // Contract to manage the Ombu data e interoperate with Semaphore.
 
 contract Ombu {
@@ -50,10 +48,9 @@ contract Ombu {
 
     constructor(address _semaphoreAddress, address _ombuAdmin) {
         semaphore = ISemaphore(_semaphoreAddress);
-        admin = _ombuAdmin;
+        admin = msg.sender;
         // semaphore inicia con Id 0 = Invisible Garden.
         uint256 groupId = semaphore.createGroup(_ombuAdmin);
-        console.log("Initial Group ID:", groupId);
         groupCounter++;
         // save the groups ids for later reference.
         groups.push(groupId);
