@@ -23,5 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
 .env
 .env_template
+relayer/.env
+
+# Relayer
+relayer/node_modules
