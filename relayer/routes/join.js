@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 const router = express.Router();
 
 // Cargar ABI del contrato
-const abiPath = join(__dirname, "../../out/Ombu.sol/Ombu.json");
+const abiPath = join(__dirname, "../Ombu.json");
 let OmbuArtifact;
 try {
     OmbuArtifact = JSON.parse(readFileSync(abiPath, "utf8"));
@@ -32,7 +32,8 @@ router.post("/", async (req, res) => {
         }
 
         // groupId es opcional, por defecto 1
-        const selectedGroupId = groupId || 1;
+        // const selectedGroupId = groupId || 1;
+        const selectedGroupId = 0;
 
         // Validar que el ABI esté cargado
         if (!OmbuArtifact || !OmbuArtifact.abi) {
@@ -47,7 +48,7 @@ router.post("/", async (req, res) => {
         const signer = new Wallet(process.env.PRIVATE_KEY, provider);
         const contract = new Contract(process.env.CONTRACT_ADDRESS, OmbuArtifact.abi, signer);
 
-        console.log("📝 Joining group...");
+        console.log("📝 Joining group...!!!");
         console.log("   Group ID:", selectedGroupId);
         console.log("   Identity Commitment:", identityCommitment);
         console.log("   Contract:", process.env.CONTRACT_ADDRESS);
@@ -61,6 +62,33 @@ router.post("/", async (req, res) => {
                 error: "Insufficient funds",
                 details: "Relayer wallet has no funds to pay for gas",
             });
+        }
+
+        // Verificar si el grupo existe
+        try {
+            const groupCounter = await contract.groupCounter();
+            console.log("   Total groups in contract:", groupCounter.toString());
+            
+            // if (selectedGroupId >= Number(groupCounter)) {
+            //     return res.status(400).json({
+            //         error: "Invalid group ID",
+            //         details: `Group > ${selectedGroupId} does not exist. Available groups: 0-${Number(groupCounter) - 1}`,
+            //         availableGroups: Number(groupCounter)
+            //     });
+            // }
+
+            // Verificar si el usuario ya es miembro
+            const isMember = await contract.isGroupMember(selectedGroupId, identityCommitment);
+            console.log("   Is already member:", isMember);
+            
+            if (isMember) {
+                return res.status(400).json({
+                    error: "Already a member",
+                    details: "This identity commitment is already a member of the group",
+                });
+            }
+        } catch (checkError) {
+            console.warn("⚠️  Could not verify group/membership status:", checkError.message);
         }
 
         // Ejecutar transacción
@@ -81,16 +109,30 @@ router.post("/", async (req, res) => {
 
         // Manejar errores específicos de ethers
         let errorMessage = error.message;
+        let errorDetails = null;
+
         if (error.code === "INSUFFICIENT_FUNDS") {
             errorMessage = "Relayer wallet has insufficient funds for gas";
         } else if (error.code === "CALL_EXCEPTION") {
-            errorMessage = "Smart contract call failed. User may already be in group.";
+            // Decodificar el error custom
+            const errorData = error.data || error.info?.error?.data;
+            
+            // Error selector 0xbb9bf278 = Semaphore__GroupDoesNotExist()
+            if (errorData === "0xbb9bf278") {
+                errorMessage = "Group does not exist in Semaphore";
+                errorDetails = "The group ID you're trying to join doesn't exist. Use /api/groups to see available groups.";
+            } else {
+                errorMessage = "Smart contract call failed";
+                errorDetails = `Error data: ${errorData}`;
+            }
         }
 
         return res.status(500).json({
             error: "Transaction failed",
             message: errorMessage,
+            details: errorDetails,
             code: error.code,
+            errorData: error.data || error.info?.error?.data,
         });
     }
 });
