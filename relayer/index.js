@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Validar variables de entorno críticas
+// Validate critical environment variables
 if (!process.env.PRIVATE_KEY) {
   console.error('❌ Error: PRIVATE_KEY not set in .env file');
   process.exit(1);

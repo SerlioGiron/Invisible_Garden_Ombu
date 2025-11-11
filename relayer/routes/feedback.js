@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 
 const router = express.Router();
 
-// Cargar ABI del contrato
+// Load contract ABI from the compiled output
 const abiPath = join(__dirname, '../../out/Ombu.sol/Ombu.json');
 let OmbuArtifact;
 try {
@@ -23,17 +23,17 @@ router.post('/', async (req, res) => {
   try {
     const { groupId, content } = req.body;
 
-    // Validación de parámetros requeridos
+    // Validate required parameters
     if (!content) {
       return res.status(400).json({ 
         error: 'Missing required parameter: content' 
       });
     }
 
-    // groupId es opcional, por defecto 0 (Invisible Garden)
+    // groupId is optional, default is 0 (Invisible Garden)
     const selectedGroupId = groupId !== undefined ? groupId : 0;
 
-    // Validar que el ABI esté cargado
+    // Validate that the ABI is loaded
     if (!OmbuArtifact || !OmbuArtifact.abi) {
       return res.status(500).json({
         error: 'Contract ABI not loaded',
@@ -41,7 +41,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Configurar provider y signer
+    // Configure provider and signer
     const provider = new JsonRpcProvider(process.env.RPC_URL);
     const signer = new Wallet(process.env.PRIVATE_KEY, provider);
     const contract = new Contract(
@@ -55,7 +55,7 @@ router.post('/', async (req, res) => {
     console.log('   Content:', content);
     console.log('   Contract:', process.env.CONTRACT_ADDRESS);
 
-    // Verificar balance del signer
+    // Verify signer balance
     const balance = await provider.getBalance(signer.address);
     console.log('   Relayer balance:', balance.toString());
 
@@ -66,7 +66,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Ejecutar transacción
+    // Execute transaction
     const transaction = await contract.createMainPost(
       selectedGroupId,
       content
@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('❌ Error in feedback route:', error);
     
-    // Manejar errores específicos de ethers
+    // Handle specific ethers errors
     let errorMessage = error.message;
     if (error.code === 'INSUFFICIENT_FUNDS') {
       errorMessage = 'Relayer wallet has insufficient funds for gas';

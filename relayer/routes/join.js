@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 
 const router = express.Router();
 
-// Cargar ABI del contrato
+// Load contract ABI
 const abiPath = join(__dirname, "../Ombu.json");
 let OmbuArtifact;
 try {
@@ -23,7 +23,7 @@ router.post("/", async (req, res) => {
     try {
         const {identityCommitment, groupId} = req.body;
 
-        // Validación de entrada
+        // Validate input
         if (!identityCommitment) {
             return res.status(400).json({
                 error: "Missing required parameter",
@@ -31,11 +31,11 @@ router.post("/", async (req, res) => {
             });
         }
 
-        // groupId es opcional, por defecto 1
+        // groupId is optional, default is 1
         // const selectedGroupId = groupId || 1;
         const selectedGroupId = 0;
 
-        // Validar que el ABI esté cargado
+        // Validate that the ABI is loaded
         if (!OmbuArtifact || !OmbuArtifact.abi) {
             return res.status(500).json({
                 error: "Contract ABI not loaded",
@@ -43,7 +43,7 @@ router.post("/", async (req, res) => {
             });
         }
 
-        // Configurar provider y signer
+        // Configure provider and signer
         const provider = new JsonRpcProvider(process.env.RPC_URL);
         const signer = new Wallet(process.env.PRIVATE_KEY, provider);
         const contract = new Contract(process.env.CONTRACT_ADDRESS, OmbuArtifact.abi, signer);
@@ -53,7 +53,7 @@ router.post("/", async (req, res) => {
         console.log("   Identity Commitment:", identityCommitment);
         console.log("   Contract:", process.env.CONTRACT_ADDRESS);
 
-        // Verificar balance del signer
+        // Verify signer balance
         const balance = await provider.getBalance(signer.address);
         console.log("   Relayer balance:", balance.toString());
 
@@ -64,7 +64,7 @@ router.post("/", async (req, res) => {
             });
         }
 
-        // Verificar si el grupo existe
+        // Verify if the group exists
         try {
             const groupCounter = await contract.groupCounter();
             console.log("   Total groups in contract:", groupCounter.toString());
@@ -77,7 +77,7 @@ router.post("/", async (req, res) => {
             //     });
             // }
 
-            // Verificar si el usuario ya es miembro
+            // Verify if the user is already a member
             const isMember = await contract.isGroupMember(selectedGroupId, identityCommitment);
             console.log("   Is already member:", isMember);
             
@@ -91,7 +91,7 @@ router.post("/", async (req, res) => {
             console.warn("⚠️  Could not verify group/membership status:", checkError.message);
         }
 
-        // Ejecutar transacción
+        // Execute transaction
         const transaction = await contract.addMember(selectedGroupId, identityCommitment);
         console.log("   Transaction sent:", transaction.hash);
 
@@ -107,14 +107,14 @@ router.post("/", async (req, res) => {
     } catch (error) {
         console.error("❌ Error in join route:", error);
 
-        // Manejar errores específicos de ethers
+        // Handle specific ethers errors
         let errorMessage = error.message;
         let errorDetails = null;
 
         if (error.code === "INSUFFICIENT_FUNDS") {
             errorMessage = "Relayer wallet has insufficient funds for gas";
         } else if (error.code === "CALL_EXCEPTION") {
-            // Decodificar el error custom
+            // Decode custom error
             const errorData = error.data || error.info?.error?.data;
             
             // Error selector 0xbb9bf278 = Semaphore__GroupDoesNotExist()
