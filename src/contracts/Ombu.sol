@@ -15,7 +15,6 @@ contract Ombu {
 
     // couter for the number of posts created, so we can follow an incremental id for posts.
     mapping(uint256 groupId => uint256 postIDCounter) public groupPostCounters;
-    //uint256 public postIDCounter;
 
     // groups ids created in semaphore.
     uint256[] public groups;
@@ -40,16 +39,20 @@ contract Ombu {
 
     //Only Adming Guard.
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Not Allowed");
+        _onlyAdmin();
         _;
+    }
+
+    function _onlyAdmin() internal view {
+        require(msg.sender == admin, "Not Allowed");
     }
 
     event change_Admin(address _newAdmin);
 
-    constructor(address _semaphoreAddress, address _ombuAdmin) {
+    constructor(address _semaphoreAddress) {
         semaphore = ISemaphore(_semaphoreAddress);
         admin = msg.sender;
-        uint256 groupId = semaphore.createGroup(_ombuAdmin);
+        uint256 groupId = semaphore.createGroup();
         groupCounter++;
         // save the groups ids for later reference.
         groups.push(groupId);
@@ -58,10 +61,30 @@ contract Ombu {
 
     /****** Functions to Manage Post *****/
     // Function to create a main post in a group, another function will create subposts.
-    function createMainPost(uint256 _groupId, string calldata _content) external {
-        OmbuPost memory newPost = OmbuPost({
-            author: msg.sender, content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0
-        });
+    function createMainPost(
+        uint256 _groupId,
+        uint256 _merkleTreeDepth,
+        uint256 _merkleTreeRoot,
+        uint256 _nullifier,
+        uint256 _feedback,
+        string calldata _content,
+        uint256[8] calldata _points
+    ) external {
+        // Create Semaphore proof struct using positional arguments (matching ISemaphore interface)
+        // The _feedback parameter must match exactly what was used when generating the proof on the client side
+        ISemaphore.SemaphoreProof memory proof =
+            ISemaphore.SemaphoreProof(_merkleTreeDepth, _merkleTreeRoot, _nullifier, _feedback, _groupId, _points);
+
+        // Validate the proof - this will revert if proof is invalid
+        semaphore.validateProof(_groupId, proof);
+
+        // If proof is valid, create the post
+        // Note: author is set to address(1) to maintain anonymity via Semaphore
+        // address(1) is used as a marker for anonymous posts (verified by Semaphore proof)
+        // address(0) is reserved for checking if a post exists
+
+        OmbuPost memory newPost =
+            OmbuPost({content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0});
         // post counter starts from 1, while groups ID can start from 0, because semaphore starts from group ID = 0.
         uint256 postIDCounter = groupPostCounters[_groupId];
         postIDCounter++;
@@ -71,21 +94,46 @@ contract Ombu {
     }
 
     // function to create subPosts, attached to a main post.
-    function createSubPost(uint256 _groupId, uint256 _mainPostId, string calldata _content) external {
-        OmbuPost storage post = groupPosts[_groupId][_mainPostId];
-        require(post.author != address(0), "Main Post does not exist");
+    function createSubPost(
+        uint256 _groupId,
+        uint256 _mainPostId,
+        uint256 _merkleTreeDepth,
+        uint256 _merkleTreeRoot,
+        uint256 _nullifier,
+        uint256 _feedback,
+        string calldata _content,
+        uint256[8] calldata _points
+    ) external {
+        // Create Semaphore proof struct using positional arguments (matching ISemaphore interface)
+        // The _feedback parameter must match exactly what was used when generating the proof on the client side
+        ISemaphore.SemaphoreProof memory proof =
+            ISemaphore.SemaphoreProof(_merkleTreeDepth, _merkleTreeRoot, _nullifier, _feedback, _groupId, _points);
 
-        OmbuPost memory newSubPost = OmbuPost({
-            author: msg.sender, content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0
-        });
+        // Validate the proof - this will revert if proof is invalid
+        semaphore.validateProof(_groupId, proof);
+
+        // If proof is valid, create the post
+        // Note: author is set to address(1) to maintain anonymity via Semaphore
+        // address(1) is used as a marker for anonymous posts (verified by Semaphore proof)
+        // address(0) is reserved for checking if a post exists
+
+        OmbuPost storage post = groupPosts[_groupId][_mainPostId];
+        require(post.timestamp != 0, "Main Post does not exist");
+
+        OmbuPost memory newSubPost =
+            OmbuPost({content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0});
+
         uint256 subPostCounter = 1;
         postSubPosts[_groupId][_mainPostId][subPostCounter] = newSubPost;
     }
 
     // Function to vote on a main post.
-    function voteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote) external {
+    function voteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote, uint256 _identityCommitment) external {
+        bool isAllowed = ISemaphoreGroups(address(semaphore)).hasMember(_groupId, _identityCommitment);
+        require(isAllowed, "User is not a member of the group");
+
         OmbuPost storage post = groupPosts[_groupId][_postId];
-        require(post.author != address(0), "Post does not exist");
+        require(post.timestamp != 0, "Post does not exist");
 
         bool hasVoted = userPostVotes[msg.sender][_groupId][_postId];
         require(!hasVoted, "User has already voted on this post");
@@ -99,9 +147,18 @@ contract Ombu {
     }
 
     // Function to vote on a sub post.
-    function voteOnSubPost(uint256 _groupId, uint256 _postId, uint256 _subPostId, bool _isUpvote) external {
+    function voteOnSubPost(
+        uint256 _groupId,
+        uint256 _postId,
+        uint256 _subPostId,
+        bool _isUpvote,
+        uint256 _identityCommitment
+    ) external {
+        bool isAllowed = ISemaphoreGroups(address(semaphore)).hasMember(_groupId, _identityCommitment);
+        require(isAllowed, "User is not a member of the group");
+
         OmbuPost storage subPost = postSubPosts[_groupId][_postId][_subPostId];
-        require(subPost.author != address(0), "SubPost does not exist");
+        require(subPost.timestamp != 0, "SubPost does not exist");
 
         bool hasVoted = userSubPostVotes[msg.sender][_groupId][_postId][_subPostId];
         require(!hasVoted, "User has already voted on this subpost");
@@ -115,9 +172,12 @@ contract Ombu {
     }
 
     // function to delete a vote on post.
-    function deleteVoteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote) external {
+    function deleteVoteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote, uint256 _identityCommitment) external {
+        bool isAllowed = ISemaphoreGroups(address(semaphore)).hasMember(_groupId, _identityCommitment);
+        require(isAllowed, "User is not a member of the group");
+
         OmbuPost storage post = groupPosts[_groupId][_postId];
-        require(post.author != address(0), "Post does not exist");
+        require(post.timestamp != 0, "Post does not exist");
 
         bool hasVoted = userPostVotes[msg.sender][_groupId][_postId];
         require(hasVoted, "User has not voted on this post");
@@ -131,9 +191,18 @@ contract Ombu {
     }
 
     // Function to delete a vote on sub post.
-    function deleteVoteOnSubPost(uint256 _groupId, uint256 _postId, uint256 _subPostId, bool _isUpvote) external {
+    function deleteVoteOnSubPost(
+        uint256 _groupId,
+        uint256 _postId,
+        uint256 _subPostId,
+        bool _isUpvote,
+        uint256 _identityCommitment
+    ) external {
+        bool isAllowed = ISemaphoreGroups(address(semaphore)).hasMember(_groupId, _identityCommitment);
+        require(isAllowed, "User is not a member of the group");
+
         OmbuPost storage subPost = postSubPosts[_groupId][_postId][_subPostId];
-        require(subPost.author != address(0), "SubPost does not exist");
+        require(subPost.timestamp != 0, "SubPost does not exist");
 
         bool hasVoted = userSubPostVotes[msg.sender][_groupId][_postId][_subPostId];
         require(hasVoted, "User has not voted on this subpost");
