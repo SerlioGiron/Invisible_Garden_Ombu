@@ -49,7 +49,6 @@ contract Ombu {
     constructor(address _semaphoreAddress, address _ombuAdmin) {
         semaphore = ISemaphore(_semaphoreAddress);
         admin = msg.sender;
-        // semaphore inicia con Id 0 = Invisible Garden.
         uint256 groupId = semaphore.createGroup(_ombuAdmin);
         groupCounter++;
         // save the groups ids for later reference.
@@ -59,7 +58,6 @@ contract Ombu {
 
     /****** Functions to Manage Post *****/
     // Function to create a main post in a group, another function will create subposts.
-    //@note confirmar si el autor debe ser msg.sender o un identityCommitment.
     function createMainPost(uint256 _groupId, string calldata _content) external {
         OmbuPost memory newPost = OmbuPost({
             author: msg.sender, content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0
@@ -73,7 +71,6 @@ contract Ombu {
     }
 
     // function to create subPosts, attached to a main post.
-    //@note confirmar si el autor debe ser msg.sender o un identityCommitment.
     function createSubPost(uint256 _groupId, uint256 _mainPostId, string calldata _content) external {
         OmbuPost storage post = groupPosts[_groupId][_mainPostId];
         require(post.author != address(0), "Main Post does not exist");
@@ -85,7 +82,6 @@ contract Ombu {
         postSubPosts[_groupId][_mainPostId][subPostCounter] = newSubPost;
     }
 
-    // el usuario solo debe poder votar una vez por post o subpost, ya sea a favor o en contra.
     // Function to vote on a main post.
     function voteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote) external {
         OmbuPost storage post = groupPosts[_groupId][_postId];
@@ -117,8 +113,6 @@ contract Ombu {
         }
         userSubPostVotes[msg.sender][_groupId][_postId][_subPostId] = true;
     }
-
-    // function to edit a post and also a function to edit a subpost.
 
     // function to delete a vote on post.
     function deleteVoteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote) external {
