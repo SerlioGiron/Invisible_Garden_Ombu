@@ -82,7 +82,8 @@ function Layout({ children }) {
 
     if (ready && authenticated && identityCommitment) {
       setJoinedTheGroup(true);
-      if (location.pathname !== '/home') {
+      // Only redirect to home if user is on the welcome page
+      if (location.pathname === '/') {
         navigate('/home');
       }
       return;

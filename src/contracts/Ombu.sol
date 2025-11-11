@@ -48,9 +48,9 @@ contract Ombu {
 
     constructor(address _semaphoreAddress, address _ombuAdmin) {
         semaphore = ISemaphore(_semaphoreAddress);
-        admin = _ombuAdmin;
+        admin = msg.sender;
         // semaphore inicia con Id 0 = Invisible Garden.
-        uint256 groupId = semaphore.createGroup();
+        uint256 groupId = semaphore.createGroup(_ombuAdmin);
         groupCounter++;
         // save the groups ids for later reference.
         groups.push(groupId);
@@ -104,16 +104,53 @@ contract Ombu {
 
     // Function to vote on a sub post.
     function voteOnSubPost(uint256 _groupId, uint256 _postId, uint256 _subPostId, bool _isUpvote) external {
-        /* OmbuPost storage subPost = postSubPosts[_groupId][_postId][_subPostId];
+        OmbuPost storage subPost = postSubPosts[_groupId][_postId][_subPostId];
         require(subPost.author != address(0), "SubPost does not exist");
 
         bool hasVoted = userSubPostVotes[msg.sender][_groupId][_postId][_subPostId];
-        require(!hasVoted, "User has already voted on this subpost"); */
+        require(!hasVoted, "User has already voted on this subpost");
+
+        if (_isUpvote) {
+            subPost.upvotes += 1;
+        } else {
+            subPost.downvotes += 1;
+        }
+        userSubPostVotes[msg.sender][_groupId][_postId][_subPostId] = true;
     }
 
     // function to edit a post and also a function to edit a subpost.
 
-    // function to delete a vote on post or subpost.
+    // function to delete a vote on post.
+    function deleteVoteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote) external {
+        OmbuPost storage post = groupPosts[_groupId][_postId];
+        require(post.author != address(0), "Post does not exist");
+
+        bool hasVoted = userPostVotes[msg.sender][_groupId][_postId];
+        require(hasVoted, "User has not voted on this post");
+
+        if (_isUpvote) {
+            post.upvotes--;
+        } else {
+            post.downvotes--;
+        }
+        userPostVotes[msg.sender][_groupId][_postId] = false;
+    }
+
+    // Function to delete a vote on sub post.
+    function deleteVoteOnSubPost(uint256 _groupId, uint256 _postId, uint256 _subPostId, bool _isUpvote) external {
+        OmbuPost storage subPost = postSubPosts[_groupId][_postId][_subPostId];
+        require(subPost.author != address(0), "SubPost does not exist");
+
+        bool hasVoted = userSubPostVotes[msg.sender][_groupId][_postId][_subPostId];
+        require(hasVoted, "User has not voted on this subpost");
+
+        if (_isUpvote) {
+            subPost.upvotes--;
+        } else {
+            subPost.downvotes--;
+        }
+        userSubPostVotes[msg.sender][_groupId][_postId][_subPostId] = false;
+    }
 
     /****** Functions to Manage Groups *****/
 
@@ -146,8 +183,27 @@ contract Ombu {
         admin = _newAdmin;
         emit change_Admin(_newAdmin);
     }
-    //@note function to check if an identity commitment is member of a group.
-    // function to change the group admin in semaphore.
-    //@note para actualizar el admin del grupo hay que llamar a la funcion de semaphore directamente primero updateGroupAdmin por el admin
-    // del grupo y despues el nuevo admin debe llamar a acceptGroupAdmin para aceptar el rol.
+
+    /// @notice Initiates a group admin update in Semaphore. Current group admin must call this.
+    /// @dev Wraps Semaphore's updateGroupAdmin. The new admin must later call acceptGroupAdmin.
+    function changeGroupAdmin(uint256 _groupId, address _newAdmin) external {
+        // Forward to Semaphore. Access control is enforced by Semaphore itself (caller must be current admin).
+        semaphore.updateGroupAdmin(_groupId, _newAdmin);
+    }
+
+    function acceptGroupAdmin(uint256 _groupId) external {
+        // call semaphore to accept the group admin role.
+        semaphore.acceptGroupAdmin(_groupId);
+    }
+
+    /// function to check if an identity commitment is member of a group.
+    /// @notice Returns true if the identity commitment exists in the Semaphore group.
+    /// @param _groupId The group id in Semaphore.
+    /// @param _identityCommitment The identity commitment to check.
+    /// @return True if the member exists, false otherwise.
+    function isGroupMember(uint256 _groupId, uint256 _identityCommitment) external view returns (bool) {
+        // The deployed Semaphore contract also exposes the ISemaphoreGroups view.
+        // Cast to ISemaphoreGroups to call hasMember.
+        return ISemaphoreGroups(address(semaphore)).hasMember(_groupId, _identityCommitment);
+    }
 }

@@ -25,11 +25,24 @@ import {
 import { useNavigate } from "react-router";
 import { useContract } from "../hooks/useContract";
 import { usePrivy } from "@privy-io/react-auth";
+import { useGroupPosts } from "../hooks/usePostComments";
+import { useEffect } from "react";
 
 function Home() {
   const navigate = useNavigate();
   const { posts } = useContract();
   const { authenticated } = usePrivy();
+  
+  // Using useGroupPosts hook
+  const { posts: groupPosts, isLoading, error, totalPosts: groupTotalPosts } = useGroupPosts(0);
+  
+  // Log posts to console
+  useEffect(() => {
+    console.log("📊 Group Posts from useGroupPosts:", groupPosts);
+    console.log("📈 Total Posts from hook:", groupTotalPosts);
+    console.log("⏳ Loading:", isLoading);
+    if (error) console.error("❌ Error:", error);
+  }, [groupPosts, groupTotalPosts, isLoading, error]);
 
   // Estadísticas rápidas
   const totalPosts = posts.length;

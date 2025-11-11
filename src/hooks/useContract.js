@@ -243,6 +243,26 @@ export function useContract() {
     }
   };
 
+  // Function to create a main post (using createMainPost from Ombu contract)
+  const createMainPost = async (groupId, content) => {
+    try {
+      console.log("Creating main post in group:", groupId, "Content:", content);
+      
+      const response = await writeContract({
+        address: CONTRACT_CONFIG.address,
+        abi: CONTRACT_CONFIG.abi,
+        functionName: "createMainPost",
+        args: [groupId, content],
+      });
+
+      console.log("Main post created successfully:", response);
+      return true;
+    } catch (error) {
+      console.error("Error creating main post:", error);
+      throw error;
+    }
+  };
+
   // Get all posts by an author
   const getPostsByAuthor = (authorAddress) => {
     const {
@@ -278,6 +298,7 @@ export function useContract() {
     vote,
     post,
     addComment,
+    createMainPost,
     estimateVoteGas,
     userAddress,
     isTransactionPending: isPending,

@@ -102,6 +102,24 @@ export const CONTRACT_CONFIG = {
         },
         {
             "type": "function",
+            "name": "createMainPost",
+            "inputs": [
+                {
+                    "name": "_groupId",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "_content",
+                    "type": "string",
+                    "internalType": "string"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
+        },
+        {
+            "type": "function",
             "name": "groupPosts",
             "inputs": [
                 {
