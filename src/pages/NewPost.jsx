@@ -25,7 +25,7 @@ import {
 } from "@tabler/icons-react";
 import { useContract } from "../hooks/useContract";
 import { useNavigate } from "react-router";
-import { categories } from "../services/contract";
+import { categories, DEFAULT_GROUP_ID } from "../services/contract";
 import { validarPostAI, validarTituloAI } from "../services/apiBackendAI";
 import { useWaitForTransactionReceipt } from "wagmi";
 
@@ -33,7 +33,7 @@ const MAX_TITULO = 50;
 const MAX_CONTENIDO = 280;
 
 function NewPost() {
-  const { post, transactionHash, isTransactionPending } = useContract();
+  const { createMainPost, transactionHash, isTransactionPending } = useContract();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
@@ -145,7 +145,11 @@ function NewPost() {
         return;
       }
 
-      await post(formData.title, formData.content, categoria, tags);
+      // Call createMainPost with groupId and content
+      // Note: We're only sending content, not title or other fields
+      // If you want to include title in content, you can concatenate them
+      const fullContent = `${formData.title}\n\n${formData.content}`;
+      await createMainPost(DEFAULT_GROUP_ID, fullContent);
     } catch (error) {
       console.error("Error creating post:", error);
       setIsValidatingAI(false);

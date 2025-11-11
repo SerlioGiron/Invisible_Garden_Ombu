@@ -95,6 +95,31 @@ export function useCreateIdentity() {
                 //     args: [DEFAULT_GROUP_ID, newIdentity.commitment],
                 // });
 
+                console.log("🔵 TEST: Adding member to Semaphore group via relayer...");
+                try {
+                    const response = await fetch('http://localhost:3001/api/join', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            identityCommitment: commitmentValue,
+                            groupId: DEFAULT_GROUP_ID // opcional, por defecto es 0
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Failed to join group');
+                    }
+
+                    const result = await response.json();
+                    console.log("✅ TEST: Member added to Semaphore group successfully!", response);
+                } catch (relayerError) {
+                    console.error("❌ TEST: Error adding member via relayer:", relayerError);
+                    throw relayerError;
+                }
+
                 if (typeof window !== "undefined") {
                     try {
                         localStorage.setItem("ombuSemaphoreCommitment", commitmentValue);
