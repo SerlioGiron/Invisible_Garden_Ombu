@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {Ombu} from "../Ombu.sol";
-import {ISemaphoreGroups} from "../ISemaphoreGroups.sol";
+import {ISemaphoreGroups} from "@semaphore-protocol/contracts/interfaces/ISemaphoreGroups.sol";
 import {OmbuPost} from "../structs.sol";
 
 contract OmbuTest is Test {

@@ -1,6 +1,6 @@
 // src/services/contract.js
 export const CONTRACT_CONFIG = {
-    address: "0xB4E6E678Bc83875891671EC70337aD08E1dD66d7",
+    address: "0x22a90d288390580865d65d8c288be8b838a5cf0e",
     abi: [
         {
             "type": "constructor",
@@ -102,6 +102,25 @@ export const CONTRACT_CONFIG = {
         },
         {
             "type": "function",
+            "name": "groupPostCounters",
+            "inputs": [
+                {
+                    "name": "groupId",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "postIDCounter",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
             "name": "groupPosts",
             "inputs": [
                 {
@@ -110,17 +129,12 @@ export const CONTRACT_CONFIG = {
                     "internalType": "uint256"
                 },
                 {
-                    "name": "",
+                    "name": "ombuPostId",
                     "type": "uint256",
                     "internalType": "uint256"
                 }
             ],
             "outputs": [
-                {
-                    "name": "id",
-                    "type": "uint64",
-                    "internalType": "uint64"
-                },
                 {
                     "name": "author",
                     "type": "address",
@@ -151,13 +165,8 @@ export const CONTRACT_CONFIG = {
         },
         {
             "type": "function",
-            "name": "postSubPosts",
+            "name": "groups",
             "inputs": [
-                {
-                    "name": "ombuPostId",
-                    "type": "uint64",
-                    "internalType": "uint64"
-                },
                 {
                     "name": "",
                     "type": "uint256",
@@ -166,34 +175,33 @@ export const CONTRACT_CONFIG = {
             ],
             "outputs": [
                 {
-                    "name": "id",
-                    "type": "uint64",
-                    "internalType": "uint64"
+                    "name": "",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "isGroupMember",
+            "inputs": [
+                {
+                    "name": "_groupId",
+                    "type": "uint256",
+                    "internalType": "uint256"
                 },
                 {
-                    "name": "author",
-                    "type": "address",
-                    "internalType": "address"
-                },
+                    "name": "_identityCommitment",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                }
+            ],
+            "outputs": [
                 {
-                    "name": "content",
-                    "type": "string",
-                    "internalType": "string"
-                },
-                {
-                    "name": "timestamp",
-                    "type": "uint32",
-                    "internalType": "uint32"
-                },
-                {
-                    "name": "upvotes",
-                    "type": "uint32",
-                    "internalType": "uint32"
-                },
-                {
-                    "name": "downvotes",
-                    "type": "uint32",
-                    "internalType": "uint32"
+                    "name": "",
+                    "type": "bool",
+                    "internalType": "bool"
                 }
             ],
             "stateMutability": "view"
@@ -233,6 +241,49 @@ export const CONTRACT_CONFIG = {
                 }
             ],
             "stateMutability": "view"
+        },
+        {
+            "type": "function",
+            "name": "sendFeedback",
+            "inputs": [
+                {
+                    "name": "_groupId",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "_merkleTreeDepth",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "_merkleTreeRoot",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "_nullifier",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "_feedback",
+                    "type": "uint256",
+                    "internalType": "uint256"
+                },
+                {
+                    "name": "_content",
+                    "type": "string",
+                    "internalType": "string"
+                },
+                {
+                    "name": "_points",
+                    "type": "uint256[8]",
+                    "internalType": "uint256[8]"
+                }
+            ],
+            "outputs": [],
+            "stateMutability": "nonpayable"
         }
     ],
 };
@@ -260,4 +311,4 @@ export const categories = [
     {value: "vida-universitaria", label: "Vida Universitaria", color: "violet"},
 ];
 
-export const DEFAULT_GROUP_ID = 0;
+export const DEFAULT_GROUP_ID = 4;

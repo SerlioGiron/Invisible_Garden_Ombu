@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {ISemaphore} from "./ISemaphore.sol";
-import {ISemaphoreGroups} from "./ISemaphoreGroups.sol";
+import {ISemaphore} from "@semaphore-protocol/contracts/interfaces/ISemaphore.sol";
+import {ISemaphoreGroups} from "@semaphore-protocol/contracts/interfaces/ISemaphoreGroups.sol";
 import {OmbuPost} from "./structs.sol";
 
 // Contract to manage the Ombu data e interoperate with Semaphore.
@@ -85,8 +85,7 @@ contract Ombu {
         postSubPosts[_groupId][_mainPostId][subPostCounter] = newSubPost;
     }
 
-    // el usuario solo debe poder votar una vez por post o subpost, ya sea a favor o en contra.
-    // Function to vote on a main post.
+    // Function to vote on a main post. User should be able to vote on a post only once.
     function voteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote) external {
         OmbuPost storage post = groupPosts[_groupId][_postId];
         require(post.author != address(0), "Post does not exist");
@@ -118,7 +117,55 @@ contract Ombu {
         userSubPostVotes[msg.sender][_groupId][_postId][_subPostId] = true;
     }
 
-    // function to edit a post and also a function to edit a subpost.
+    /// @notice Send feedback with zero-knowledge proof verification via Semaphore
+    /// @dev Validates Semaphore proof and creates a post in the specified group
+    /// @param _groupId The Semaphore group ID
+    /// @param _merkleTreeDepth The depth of the Merkle tree
+    /// @param _merkleTreeRoot The root of the Merkle tree
+    /// @param _nullifier The nullifier to prevent double-spending
+    /// @param _feedback The feedback signal (uint256) used in the Semaphore proof - must match what was used to generate the proof
+    /// @param _content The content of the feedback/post (stored separately from the proof signal)
+    /// @param _points The proof points array (8 uint256 values)
+    function sendFeedback(
+        uint256 _groupId,
+        uint256 _merkleTreeDepth,
+        uint256 _merkleTreeRoot,
+        uint256 _nullifier,
+        uint256 _feedback,
+        string calldata _content,
+        uint256[8] calldata _points
+    ) external {
+        // Create Semaphore proof struct using positional arguments (matching ISemaphore interface)
+        // The _feedback parameter must match exactly what was used when generating the proof on the client side
+        ISemaphore.SemaphoreProof memory proof = ISemaphore.SemaphoreProof(
+            _merkleTreeDepth,
+            _merkleTreeRoot,
+            _nullifier,
+            _feedback,
+            _groupId,
+            _points
+        );
+
+        // Validate the proof - this will revert if proof is invalid
+        semaphore.validateProof(_groupId, proof);
+
+        // If proof is valid, create the post
+        // Note: author is set to address(1) to maintain anonymity via Semaphore
+        // address(1) is used as a marker for anonymous posts (verified by Semaphore proof)
+        // address(0) is reserved for checking if a post exists
+        OmbuPost memory newPost = OmbuPost({
+            author: address(1), // Anonymous - verified by Semaphore proof
+            content: _content,
+            timestamp: uint32(block.timestamp),
+            upvotes: 0,
+            downvotes: 0
+        });
+
+        uint256 postIDCounter = groupPostCounters[_groupId];
+        postIDCounter++;
+        groupPostCounters[_groupId] = postIDCounter;
+        groupPosts[_groupId][postIDCounter] = newPost;
+    }
 
     // function to delete a vote on post.
     function deleteVoteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote) external {

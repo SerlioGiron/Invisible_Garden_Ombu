@@ -1,0 +1,10 @@
+{
+  "transactions": [
+    {
+      "rpc": "https://arbitrum-sepolia.drpc.org"
+    },
+    {
+      "rpc": "https://arbitrum-sepolia.drpc.org"
+    }
+  ]
+}

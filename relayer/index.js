@@ -5,6 +5,8 @@ import joinRoute from './routes/join.js';
 import feedbackRoute from './routes/feedback.js';
 import checkMemberRoute from './routes/checkMember.js';
 import getGroupsRoute from './routes/getGroups.js';
+import membersRoute from './routes/members.js';
+import adminRoute from './routes/admin.js';
 
 dotenv.config();
 
@@ -46,6 +48,8 @@ app.use('/api/join', joinRoute);
 app.use('/api/feedback', feedbackRoute);
 app.use('/api/check-member', checkMemberRoute);
 app.use('/api/groups', getGroupsRoute);
+app.use('/api/members', membersRoute);
+app.use('/api/admin', adminRoute);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -66,7 +70,8 @@ app.get('/', (req, res) => {
       join: '/api/join',
       feedback: '/api/feedback',
       checkMember: '/api/check-member',
-      groups: '/api/groups'
+      groups: '/api/groups',
+      members: '/api/members/:groupId'
     }
   });
 });

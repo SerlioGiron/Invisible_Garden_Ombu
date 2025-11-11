@@ -1,57 +1,28 @@
 import express from 'express';
-import { Contract, JsonRpcProvider, Wallet } from 'ethers';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import {validateABI, getContract, handleError} from "../utils/contract.js";
 
 const router = express.Router();
 
-// Load contract ABI from the compiled output
-const abiPath = join(__dirname, '../../out/Ombu.sol/Ombu.json');
-let OmbuArtifact;
-try {
-  OmbuArtifact = JSON.parse(readFileSync(abiPath, 'utf8'));
-} catch (error) {
-  console.error('❌ Error loading contract ABI:', error.message);
-  console.error('   Make sure to compile contracts with: forge build');
-}
-
 router.post('/', async (req, res) => {
   try {
-    const { groupId, content } = req.body;
+    const { groupId, feedback, content, merkleTreeDepth, merkleTreeRoot, nullifier, points } = req.body;
 
-    // Validate required parameters
-    if (!content) {
-      return res.status(400).json({ 
-        error: 'Missing required parameter: content' 
+    // Validate input
+    if (groupId === undefined || feedback === undefined || !merkleTreeDepth || !merkleTreeRoot || !nullifier || !content || points === undefined) {
+      return res.status(400).json({
+        error: 'Missing required parameter',
+        details: 'groupId, feedback (uint256), merkleTreeDepth, merkleTreeRoot, nullifier, content, and points are required'
       });
     }
-
-    // groupId is optional, default is 0 (Invisible Garden)
-    const selectedGroupId = groupId !== undefined ? groupId : 0;
 
     // Validate that the ABI is loaded
-    if (!OmbuArtifact || !OmbuArtifact.abi) {
-      return res.status(500).json({
-        error: 'Contract ABI not loaded',
-        details: 'Run "forge build" to compile contracts'
-      });
-    }
+    if (!validateABI(res)) return;
 
-    // Configure provider and signer
-    const provider = new JsonRpcProvider(process.env.RPC_URL);
-    const signer = new Wallet(process.env.PRIVATE_KEY, provider);
-    const contract = new Contract(
-      process.env.CONTRACT_ADDRESS,
-      OmbuArtifact.abi,
-      signer
-    );
+    // Get contract instance
+    const {provider, signer, contract} = getContract();
 
-    console.log('📝 Creating main post...');
-    console.log('   Group ID:', selectedGroupId);
+    console.log('   Sending feedback...');
+    console.log('   Group ID:', groupId);
     console.log('   Content:', content);
     console.log('   Contract:', process.env.CONTRACT_ADDRESS);
 
@@ -67,15 +38,21 @@ router.post('/', async (req, res) => {
     }
 
     // Execute transaction
-    const transaction = await contract.createMainPost(
-      selectedGroupId,
-      content
+    // Note: feedback must be the exact uint256 value used when generating the Semaphore proof on the client side
+    const transaction = await contract.sendFeedback(
+      groupId,
+      merkleTreeDepth,
+      merkleTreeRoot,
+      nullifier,
+      feedback,
+      content,
+      points
     );
 
     console.log('   Transaction sent:', transaction.hash);
 
     const receipt = await transaction.wait();
-    console.log('✅ Post created successfully in block:', receipt.blockNumber);
+    console.log('✅ Feedback created successfully in block:', receipt.blockNumber);
 
     return res.status(200).json({
       success: true,
@@ -85,21 +62,7 @@ router.post('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in feedback route:', error);
-    
-    // Handle specific ethers errors
-    let errorMessage = error.message;
-    if (error.code === 'INSUFFICIENT_FUNDS') {
-      errorMessage = 'Relayer wallet has insufficient funds for gas';
-    } else if (error.code === 'CALL_EXCEPTION') {
-      errorMessage = 'Smart contract call failed. Check parameters or contract state.';
-    }
-
-    return res.status(500).json({
-      error: 'Transaction failed',
-      message: errorMessage,
-      code: error.code
-    });
+    return handleError(error, res);
   }
 });
 

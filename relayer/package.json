@@ -8,13 +8,18 @@
     "start": "node index.js",
     "dev": "node --watch index.js"
   },
-  "keywords": ["relayer", "ethereum", "ombu"],
+  "keywords": [
+    "relayer",
+    "ethereum",
+    "ombu"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "ethers": "^6.9.0",
+    "@semaphore-protocol/data": "^4.14.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
+    "ethers": "^6.9.0",
+    "express": "^4.18.2"
   }
 }
