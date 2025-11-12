@@ -4,6 +4,7 @@ import {groupMembersCache} from "./join.js";
 import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
+import {getIdentityCommitmentsInOrder} from "../utils/mongodb.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,7 +36,7 @@ router.get("/:groupId", async (req, res) => {
             const jsonPath = join(__dirname, "../../set-ordered-members.json");
             const jsonData = JSON.parse(readFileSync(jsonPath, "utf8"));
             if (jsonData.groupId === groupId || jsonData.groupId === groupId.toString()) {
-                members = jsonData.members || [];
+                members =  await getIdentityCommitmentsInOrder() || [];
                 console.log(`   Found ${members.length} members in set-ordered-members.json`);
             }
         } catch (jsonError) {
