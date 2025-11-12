@@ -4,7 +4,7 @@
       "hash": "0x721a65ad868d4a484b78bba38f349a10d8cb0067bbccb46b8e7e8e28a1090167",
       "transactionType": "CREATE",
       "contractName": "Ombu",
-      "contractAddress": "0x22a90d288390580865d65d8c288be8b838a5cf0e",
+      "contractAddress": "0x3F70431e4ccc1DD4e6d0f8394a4ecc2e67767358",
       "function": null,
       "arguments": [
         "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D",
@@ -70,7 +70,7 @@
       "effectiveGasPrice": "0x5f5e100",
       "from": "0x6e89b5168a0a3373d87559c5d1d279b3c89b6104",
       "to": null,
-      "contractAddress": "0x22a90d288390580865d65d8c288be8b838a5cf0e",
+      "contractAddress": "0x3F70431e4ccc1DD4e6d0f8394a4ecc2e67767358",
       "gasUsedForL1": "0x0",
       "l1BlockNumber": "0x929a31",
       "timeboosted": false

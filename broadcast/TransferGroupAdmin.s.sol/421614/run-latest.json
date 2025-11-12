@@ -8,7 +8,7 @@
       "function": "updateGroupAdmin(uint256,address)",
       "arguments": [
         "4",
-        "0x22a90D288390580865d65D8C288bE8B838a5cf0e"
+        "0x3F70431e4ccc1DD4e6d0f8394a4ecc2e67767358"
       ],
       "transaction": {
         "from": "0x6e89b5168a0a3373d87559c5d1d279b3c89b6104",
@@ -26,14 +26,14 @@
       "hash": null,
       "transactionType": "CALL",
       "contractName": null,
-      "contractAddress": "0x22a90d288390580865d65d8c288be8b838a5cf0e",
+      "contractAddress": "0x3F70431e4ccc1DD4e6d0f8394a4ecc2e67767358",
       "function": "acceptGroupAdmin(uint256)",
       "arguments": [
         "4"
       ],
       "transaction": {
         "from": "0x6e89b5168a0a3373d87559c5d1d279b3c89b6104",
-        "to": "0x22a90d288390580865d65d8c288be8b838a5cf0e",
+        "to": "0x3F70431e4ccc1DD4e6d0f8394a4ecc2e67767358",
         "gas": "0xc44e",
         "value": "0x0",
         "input": "0xda3cda520000000000000000000000000000000000000000000000000000000000000004",

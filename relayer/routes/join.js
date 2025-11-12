@@ -156,6 +156,9 @@ router.post("/", async (req, res) => {
                 contractAddress: process.env.CONTRACT_ADDRESS,
             });
         }
+        
+        // const receipt = await provider.getTransactionReceipt("0x2d80556ba0049ab8354160a763ec802c5251f2f3b19de195cfe25bab367e51a7");
+        // console.log("receipt: ", receipt.logs);
 
         // Verify if the user is already a member
         console.log("🔵 Checking if user is already a member...");
@@ -195,8 +198,38 @@ router.post("/", async (req, res) => {
         try {
             const transaction = await contract.addMember(selectedGroupId, identityCommitment);
             console.log("✅ Transaction sent successfully");
-            console.log("   Transaction hash:", transaction.hash);
+            console.log("   Transaction:", transaction);
             console.log("   Waiting for confirmation...");
+
+            // Parse the hexadecimal data from logs
+            if (transaction.logs.length > 0 && transaction.logs[0].data) {
+                const hexData = transaction.logs[0].data;
+                console.log("🔵 Parsing hex data:", hexData);
+                
+                // Remove '0x' prefix
+                const cleanHex = hexData.slice(2);
+                console.log("   Clean hex (without 0x):", cleanHex);
+                console.log("   Total length:", cleanHex.length, "characters");
+                
+                // Split into three 64-character strings (32 bytes each)
+                const part1 = cleanHex.slice(0, 64);
+                const part2 = cleanHex.slice(64, 128);
+                const part3 = cleanHex.slice(128, 192);
+                
+                console.log("   Part 1 (hex):", part1);
+                console.log("   Part 2 (hex):", part2);
+                console.log("   Part 3 (hex):", part3);
+                
+                // Convert to decimal
+                const decimal1 = BigInt('0x' + part1).toString();
+                const decimal2 = BigInt('0x' + part2).toString();
+                const decimal3 = BigInt('0x' + part3).toString();
+                
+                console.log("✅ Decoded values:");
+                console.log("   Part 1 (decimal):", decimal1);
+                console.log("   Part 2 (decimal):", decimal2);
+                console.log("   Part 3 (decimal):", decimal3);
+            }
 
             const receipt = await transaction.wait();
             console.log("✅ Transaction confirmed!");
