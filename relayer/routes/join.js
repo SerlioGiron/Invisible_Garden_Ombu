@@ -4,6 +4,7 @@ import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
 import {MongoClient} from "mongodb";
+import { SEMAPHORE_CONTRACT_ADDRESS } from "../../src/config/constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -126,8 +127,7 @@ router.post("/", async (req, res) => {
         console.log("🔵 Verifying group exists in Semaphore...");
         try {
             // Use the Semaphore contract directly to check if group exists
-            // Semaphore contract address on Arbitrum Sepolia
-            const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
+            const SEMAPHORE_ADDRESS = SEMAPHORE_CONTRACT_ADDRESS;
             const semaphoreGroupsABI = [
                 {
                     inputs: [{name: "groupId", type: "uint256"}],
@@ -204,7 +204,7 @@ router.post("/", async (req, res) => {
             console.log("   Gas used:", receipt.gasUsed.toString());
             console.log("   Status:", receipt.status === 1 ? "Success" : "Failed");
 
-            const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
+            const SEMAPHORE_ADDRESS = SEMAPHORE_CONTRACT_ADDRESS;
             const MemberAddedEventAbi = "event MemberAdded(uint256 indexed groupId, uint256 index, uint256 identityCommitment, uint256 merkleTreeRoot)";
             const iface = new Interface([MemberAddedEventAbi]);
             

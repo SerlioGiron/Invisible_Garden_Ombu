@@ -23,14 +23,17 @@ async function findMembers() {
     const fromBlock = Math.max(0, currentBlock - 50000);
     console.log("   Scanning from block:", fromBlock);
 
+    // Convert GROUP_ID to padded hex (32 bytes) - used in both try and catch blocks
+    const groupIdHex = ethers.zeroPadValue(ethers.toBeHex(GROUP_ID), 32);
+
     try {
         // Query logs for MemberAdded events
+
         const logs = await provider.getLogs({
             address: SEMAPHORE_ADDRESS,
             topics: [
                 eventTopic,
-                // Group ID = 5 (padded to 32 bytes)
-                "0x0000000000000000000000000000000000000000000000000000000000000005"
+                groupIdHex  // Group ID as indexed parameter (padded to 32 bytes)
             ],
             fromBlock,
             toBlock: currentBlock
@@ -90,7 +93,7 @@ async function findMembers() {
                 address: SEMAPHORE_ADDRESS,
                 topics: [
                     eventTopic,
-                    "0x0000000000000000000000000000000000000000000000000000000000000005"
+                    groupIdHex  // Use the same groupIdHex from above
                 ],
                 fromBlock: smallFromBlock,
                 toBlock: currentBlock

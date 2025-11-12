@@ -17,12 +17,14 @@ async function populateCacheInOrder() {
     console.log(`📡 Scanning blocks ${fromBlock} to ${currentBlock}`);
 
     const eventTopic = "0x19239b3f93cd10558aaf11423af70c77763bf54f52bcc75bfa74d4d13548cde9";
+    // Convert GROUP_ID to padded hex (32 bytes)
+    const groupIdHex = ethers.zeroPadValue(ethers.toBeHex(GROUP_ID), 32);
 
     const logs = await provider.getLogs({
         address: SEMAPHORE_ADDRESS,
         topics: [
             eventTopic,
-            "0x0000000000000000000000000000000000000000000000000000000000000005"
+            groupIdHex  // Group ID as indexed parameter
         ],
         fromBlock,
         toBlock: currentBlock
