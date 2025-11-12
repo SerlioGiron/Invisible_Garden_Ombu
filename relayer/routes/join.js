@@ -4,6 +4,7 @@ import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
 import {MongoClient} from "mongodb";
+import {getIdentityCommitmentsInOrder} from "../utils/mongodb.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -328,6 +329,8 @@ router.post("/", async (req, res) => {
             groupMembersCache.get(selectedGroupId).add(identityCommitment);
             console.log("✅ Added member to cache for group", selectedGroupId);
             console.log("   Cache now has", groupMembersCache.get(selectedGroupId).size, "members");
+            const identityCommitments = await getIdentityCommitmentsInOrder(selectedGroupId);
+            console.log("Identity commitments: ", identityCommitments);
 
             return res.status(200).json({
                 success: true,
