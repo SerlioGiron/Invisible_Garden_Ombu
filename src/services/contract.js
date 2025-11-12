@@ -1,239 +1,200 @@
 // src/services/contract.js
+import { CONTRACT_CONFIG as IMPORTED_CONTRACT_CONFIG, DEFAULT_GROUP_ID } from '../config/constants.js';
+
+// Re-export DEFAULT_GROUP_ID from constants
+export { DEFAULT_GROUP_ID };
+
+// CONTRACT_CONFIG with ABI - maintains backward compatibility
 export const CONTRACT_CONFIG = {
-    address: "0xB4E6E678Bc83875891671EC70337aD08E1dD66d7",
+    address: IMPORTED_CONTRACT_CONFIG.address,
     abi: [
+        {inputs: [{internalType: "address", name: "_semaphoreAddress", type: "address"}], stateMutability: "nonpayable", type: "constructor"},
+        {anonymous: false, inputs: [{indexed: false, internalType: "address", name: "_newAdmin", type: "address"}], name: "change_Admin", type: "event"},
+        {inputs: [{internalType: "uint256", name: "_groupId", type: "uint256"}], name: "acceptGroupAdmin", outputs: [], stateMutability: "nonpayable", type: "function"},
         {
-            "type": "constructor",
-            "inputs": [
-                {
-                    "name": "_semaphoreAddress",
-                    "type": "address",
-                    "internalType": "address"
-                },
-                {
-                    "name": "_ombuAdmin",
-                    "type": "address",
-                    "internalType": "address"
-                }
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_identityCommitment", type: "uint256"},
             ],
-            "stateMutability": "nonpayable"
+            name: "addMember",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
+        },
+        {inputs: [], name: "admin", outputs: [{internalType: "address", name: "", type: "address"}], stateMutability: "view", type: "function"},
+        {inputs: [{internalType: "address", name: "_newAdmin", type: "address"}], name: "changeAdmin", outputs: [], stateMutability: "nonpayable", type: "function"},
+        {
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "address", name: "_newAdmin", type: "address"},
+            ],
+            name: "changeGroupAdmin",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
+        },
+        {inputs: [{internalType: "string", name: "_name", type: "string"}], name: "createGroup", outputs: [{internalType: "uint256", name: "", type: "uint256"}], stateMutability: "nonpayable", type: "function"},
+        {
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_merkleTreeDepth", type: "uint256"},
+                {internalType: "uint256", name: "_merkleTreeRoot", type: "uint256"},
+                {internalType: "uint256", name: "_nullifier", type: "uint256"},
+                {internalType: "uint256", name: "_feedback", type: "uint256"},
+                {internalType: "string", name: "_content", type: "string"},
+                {internalType: "uint256[8]", name: "_points", type: "uint256[8]"},
+            ],
+            name: "createMainPost",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
         },
         {
-            "type": "function",
-            "name": "addMember",
-            "inputs": [
-                {
-                    "name": "_groupId",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                },
-                {
-                    "name": "_identityCommitment",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                }
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_mainPostId", type: "uint256"},
+                {internalType: "uint256", name: "_merkleTreeDepth", type: "uint256"},
+                {internalType: "uint256", name: "_merkleTreeRoot", type: "uint256"},
+                {internalType: "uint256", name: "_nullifier", type: "uint256"},
+                {internalType: "uint256", name: "_feedback", type: "uint256"},
+                {internalType: "string", name: "_content", type: "string"},
+                {internalType: "uint256[8]", name: "_points", type: "uint256[8]"},
             ],
-            "outputs": [],
-            "stateMutability": "nonpayable"
+            name: "createSubPost",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
         },
         {
-            "type": "function",
-            "name": "admin",
-            "inputs": [],
-            "outputs": [
-                {
-                    "name": "",
-                    "type": "address",
-                    "internalType": "address"
-                }
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_postId", type: "uint256"},
+                {internalType: "bool", name: "_isUpvote", type: "bool"},
+                {internalType: "uint256", name: "_identityCommitment", type: "uint256"},
             ],
-            "stateMutability": "view"
+            name: "deleteVoteOnPost",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
         },
         {
-            "type": "function",
-            "name": "createGroup",
-            "inputs": [
-                {
-                    "name": "_name",
-                    "type": "string",
-                    "internalType": "string"
-                }
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_postId", type: "uint256"},
+                {internalType: "uint256", name: "_subPostId", type: "uint256"},
+                {internalType: "bool", name: "_isUpvote", type: "bool"},
+                {internalType: "uint256", name: "_identityCommitment", type: "uint256"},
             ],
-            "outputs": [
-                {
-                    "name": "",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                }
+            name: "deleteVoteOnSubPost",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
+        },
+        {inputs: [], name: "groupCounter", outputs: [{internalType: "uint256", name: "", type: "uint256"}], stateMutability: "view", type: "function"},
+        {inputs: [{internalType: "uint256", name: "groupId", type: "uint256"}], name: "groupNames", outputs: [{internalType: "string", name: "name", type: "string"}], stateMutability: "view", type: "function"},
+        {inputs: [{internalType: "uint256", name: "groupId", type: "uint256"}], name: "groupPostCounters", outputs: [{internalType: "uint256", name: "postIDCounter", type: "uint256"}], stateMutability: "view", type: "function"},
+        {
+            inputs: [
+                {internalType: "uint256", name: "groupId", type: "uint256"},
+                {internalType: "uint256", name: "ombuPostId", type: "uint256"},
             ],
-            "stateMutability": "nonpayable"
+            name: "groupPosts",
+            outputs: [
+                {internalType: "string", name: "content", type: "string"},
+                {internalType: "uint32", name: "timestamp", type: "uint32"},
+                {internalType: "uint32", name: "upvotes", type: "uint32"},
+                {internalType: "uint32", name: "downvotes", type: "uint32"},
+            ],
+            stateMutability: "view",
+            type: "function",
+        },
+        {inputs: [{internalType: "uint256", name: "", type: "uint256"}], name: "groups", outputs: [{internalType: "uint256", name: "", type: "uint256"}], stateMutability: "view", type: "function"},
+        {
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_identityCommitment", type: "uint256"},
+            ],
+            name: "isGroupMember",
+            outputs: [{internalType: "bool", name: "", type: "bool"}],
+            stateMutability: "view",
+            type: "function",
         },
         {
-            "type": "function",
-            "name": "groupCounter",
-            "inputs": [],
-            "outputs": [
-                {
-                    "name": "",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                }
+            inputs: [
+                {internalType: "uint256", name: "groupId", type: "uint256"},
+                {internalType: "uint256", name: "ombuPostId", type: "uint256"},
+                {internalType: "uint256", name: "subPostId", type: "uint256"},
             ],
-            "stateMutability": "view"
+            name: "postSubPosts",
+            outputs: [
+                {internalType: "string", name: "content", type: "string"},
+                {internalType: "uint32", name: "timestamp", type: "uint32"},
+                {internalType: "uint32", name: "upvotes", type: "uint32"},
+                {internalType: "uint32", name: "downvotes", type: "uint32"},
+            ],
+            stateMutability: "view",
+            type: "function",
         },
         {
-            "type": "function",
-            "name": "groupNames",
-            "inputs": [
-                {
-                    "name": "groupId",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                }
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_identityCommitment", type: "uint256"},
+                {internalType: "uint256[]", name: "_merkleProofSiblings", type: "uint256[]"},
             ],
-            "outputs": [
-                {
-                    "name": "name",
-                    "type": "string",
-                    "internalType": "string"
-                }
+            name: "removeMember",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
+        },
+        {inputs: [], name: "semaphore", outputs: [{internalType: "contract ISemaphore", name: "", type: "address"}], stateMutability: "view", type: "function"},
+        {
+            inputs: [
+                {internalType: "address", name: "user", type: "address"},
+                {internalType: "uint256", name: "groupId", type: "uint256"},
+                {internalType: "uint256", name: "postId", type: "uint256"},
             ],
-            "stateMutability": "view"
+            name: "userPostVotes",
+            outputs: [{internalType: "bool", name: "hasVoted", type: "bool"}],
+            stateMutability: "view",
+            type: "function",
         },
         {
-            "type": "function",
-            "name": "groupPosts",
-            "inputs": [
-                {
-                    "name": "groupId",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                },
-                {
-                    "name": "",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                }
+            inputs: [
+                {internalType: "address", name: "user", type: "address"},
+                {internalType: "uint256", name: "groupId", type: "uint256"},
+                {internalType: "uint256", name: "postId", type: "uint256"},
+                {internalType: "uint256", name: "subPostId", type: "uint256"},
             ],
-            "outputs": [
-                {
-                    "name": "id",
-                    "type": "uint64",
-                    "internalType": "uint64"
-                },
-                {
-                    "name": "author",
-                    "type": "address",
-                    "internalType": "address"
-                },
-                {
-                    "name": "content",
-                    "type": "string",
-                    "internalType": "string"
-                },
-                {
-                    "name": "timestamp",
-                    "type": "uint32",
-                    "internalType": "uint32"
-                },
-                {
-                    "name": "upvotes",
-                    "type": "uint32",
-                    "internalType": "uint32"
-                },
-                {
-                    "name": "downvotes",
-                    "type": "uint32",
-                    "internalType": "uint32"
-                }
-            ],
-            "stateMutability": "view"
+            name: "userSubPostVotes",
+            outputs: [{internalType: "bool", name: "hasVoted", type: "bool"}],
+            stateMutability: "view",
+            type: "function",
         },
         {
-            "type": "function",
-            "name": "postSubPosts",
-            "inputs": [
-                {
-                    "name": "ombuPostId",
-                    "type": "uint64",
-                    "internalType": "uint64"
-                },
-                {
-                    "name": "",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                }
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_postId", type: "uint256"},
+                {internalType: "bool", name: "_isUpvote", type: "bool"},
+                {internalType: "uint256", name: "_identityCommitment", type: "uint256"},
             ],
-            "outputs": [
-                {
-                    "name": "id",
-                    "type": "uint64",
-                    "internalType": "uint64"
-                },
-                {
-                    "name": "author",
-                    "type": "address",
-                    "internalType": "address"
-                },
-                {
-                    "name": "content",
-                    "type": "string",
-                    "internalType": "string"
-                },
-                {
-                    "name": "timestamp",
-                    "type": "uint32",
-                    "internalType": "uint32"
-                },
-                {
-                    "name": "upvotes",
-                    "type": "uint32",
-                    "internalType": "uint32"
-                },
-                {
-                    "name": "downvotes",
-                    "type": "uint32",
-                    "internalType": "uint32"
-                }
-            ],
-            "stateMutability": "view"
+            name: "voteOnPost",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
         },
         {
-            "type": "function",
-            "name": "removeMember",
-            "inputs": [
-                {
-                    "name": "_groupId",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                },
-                {
-                    "name": "_identityCommitment",
-                    "type": "uint256",
-                    "internalType": "uint256"
-                },
-                {
-                    "name": "_merkleProofSiblings",
-                    "type": "uint256[]",
-                    "internalType": "uint256[]"
-                }
+            inputs: [
+                {internalType: "uint256", name: "_groupId", type: "uint256"},
+                {internalType: "uint256", name: "_postId", type: "uint256"},
+                {internalType: "uint256", name: "_subPostId", type: "uint256"},
+                {internalType: "bool", name: "_isUpvote", type: "bool"},
+                {internalType: "uint256", name: "_identityCommitment", type: "uint256"},
             ],
-            "outputs": [],
-            "stateMutability": "nonpayable"
+            name: "voteOnSubPost",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
         },
-        {
-            "type": "function",
-            "name": "semaphore",
-            "inputs": [],
-            "outputs": [
-                {
-                    "name": "",
-                    "type": "address",
-                    "internalType": "contract ISemaphore"
-                }
-            ],
-            "stateMutability": "view"
-        }
     ],
 };
 
@@ -260,4 +221,3 @@ export const categories = [
     {value: "vida-universitaria", label: "Vida Universitaria", color: "violet"},
 ];
 
-export const DEFAULT_GROUP_ID = 0;

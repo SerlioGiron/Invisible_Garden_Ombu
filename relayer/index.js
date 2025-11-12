@@ -5,13 +5,16 @@ import joinRoute from './routes/join.js';
 import feedbackRoute from './routes/feedback.js';
 import checkMemberRoute from './routes/checkMember.js';
 import getGroupsRoute from './routes/getGroups.js';
+import membersRoute from './routes/members.js';
+import adminRoute from './routes/admin.js';
+import { OMBU_CONTRACT_ADDRESS } from '../src/config/constants.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Validar variables de entorno críticas
+// Validate critical environment variables
 if (!process.env.PRIVATE_KEY) {
   console.error('❌ Error: PRIVATE_KEY not set in .env file');
   process.exit(1);
@@ -19,11 +22,6 @@ if (!process.env.PRIVATE_KEY) {
 
 if (!process.env.RPC_URL) {
   console.error('❌ Error: RPC_URL not set in .env file');
-  process.exit(1);
-}
-
-if (!process.env.CONTRACT_ADDRESS) {
-  console.error('❌ Error: CONTRACT_ADDRESS not set in .env file');
   process.exit(1);
 }
 
@@ -46,14 +44,16 @@ app.use('/api/join', joinRoute);
 app.use('/api/feedback', feedbackRoute);
 app.use('/api/check-member', checkMemberRoute);
 app.use('/api/groups', getGroupsRoute);
+app.use('/api/members', membersRoute);
+app.use('/api/admin', adminRoute);
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     message: 'Relayer is running',
-    contract: process.env.CONTRACT_ADDRESS,
-    network: process.env.RPC_URL
+    contract: OMBU_CONTRACT_ADDRESS,
+    network: process.env.RPC_URL || process.env.VITE_PUBLIC_RPC_URL
   });
 });
 
@@ -66,7 +66,8 @@ app.get('/', (req, res) => {
       join: '/api/join',
       feedback: '/api/feedback',
       checkMember: '/api/check-member',
-      groups: '/api/groups'
+      groups: '/api/groups',
+      members: '/api/members/:groupId'
     }
   });
 });
@@ -86,8 +87,8 @@ app.listen(PORT, () => {
   console.log(`   Ombu Relayer Server`);
   console.log('   ====================================');
   console.log(`   🌐 URL: http://localhost:${PORT}`);
-  console.log(`   📡 Network: ${process.env.RPC_URL}`);
-  console.log(`   📝 Contract: ${process.env.CONTRACT_ADDRESS}`);
+  console.log(`   📡 Network: ${process.env.RPC_URL || process.env.VITE_PUBLIC_RPC_URL}`);
+  console.log(`   📝 Contract: ${OMBU_CONTRACT_ADDRESS}`);
   console.log('   ====================================');
   console.log('');
 });

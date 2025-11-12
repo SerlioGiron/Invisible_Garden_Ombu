@@ -378,7 +378,7 @@ function NewPost() {
 
               {isValidatingAI && (
                 <>
-                  <Text italic c="dimmed">
+                  <Text style={{ fontStyle: 'italic' }} c="dimmed">
                     Analyzing your post with AI...
                   </Text>
                 </>

@@ -18,9 +18,11 @@ cp .env.example .env
 3. Configure your `.env` file with:
    - `PRIVATE_KEY`: Your wallet's private key (with funds for gas)
    - `RPC_URL`: The RPC endpoint (default: Arbitrum Sepolia)
-   - `CONTRACT_ADDRESS`: The deployed Ombu contract address
+   - `MONGODB_URI`: MongoDB connection string (for storing identity commitments)
    - `PORT`: Server port (default: 3001)
    - `FRONTEND_URL`: Your frontend URL for CORS (default: http://localhost:5173)
+
+**Note:** The contract address is configured in `src/config/constants.js` as `OMBU_CONTRACT_ADDRESS` and does not need to be set as an environment variable.
 
 ## Running the Server
 

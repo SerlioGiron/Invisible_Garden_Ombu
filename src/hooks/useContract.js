@@ -6,6 +6,7 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useEstimateGas,
+  usePublicClient,
 } from "wagmi";
 import {
   CONTRACT_CONFIG,
@@ -13,10 +14,17 @@ import {
   REVERSE_CATEGORY_MAPPING,
 } from "../services/contract";
 import { getFallbackData } from "../services/fallbackData";
+import { sendFeedbackViaRelayer } from "../services/relayerApi";
+import { 
+  getSemaphoreIdentityFromStorage, 
+  generateSemaphoreProof, 
+  fetchGroupData 
+} from "../services/semaphoreProof";
 
 export function useContract() {
   const { address: userAddress } = useAccount();
   const { writeContract, data: hash, isPending } = useWriteContract();
+  const publicClient = usePublicClient();
   const [useFallback, setUseFallback] = useState(false);
 
   // Function to get all posts
@@ -243,19 +251,83 @@ export function useContract() {
     }
   };
 
-  // Function to create a main post (using createMainPost from Ombu contract)
-  const createMainPost = async (groupId, content) => {
+  // Function to create a main post
+  // Automatically generates Semaphore proof if identity exists (anonymous)
+  // Otherwise falls back to direct contract call (non-anonymous)
+  const createMainPost = async (groupId, content, feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points) => {
     try {
       console.log("Creating main post in group:", groupId, "Content:", content);
       
-      const response = await writeContract({
+      // If Semaphore proof parameters are explicitly provided, use them
+      if (feedback !== undefined && merkleTreeDepth !== undefined && merkleTreeRoot !== undefined && nullifier !== undefined && points !== undefined) {
+        console.log("Using provided Semaphore proof parameters");
+        const response = await sendFeedbackViaRelayer({ 
+          content, 
+          groupId, 
+          feedback, 
+          merkleTreeDepth, 
+          merkleTreeRoot, 
+          nullifier, 
+          points 
+        });
+        console.log("Main post created successfully:", response);
+        return response;
+      }
+
+      // Try to generate proof automatically if identity exists
+      const identity = getSemaphoreIdentityFromStorage();
+      if (!identity) {
+        console.log("⚠️ No Semaphore identity found. Creating non-anonymous post. To enable anonymous posts, make sure you're logged in and have joined the Semaphore group.");
+      }
+      
+      if (identity && publicClient) {
+        try {
+          console.log("🔐 Generating Semaphore proof for anonymous post...");
+
+          // Fetch group data from Semaphore contract via relayer
+          const groupData = await fetchGroupData(groupId);
+          console.log("📊 Group data fetched (raw):", JSON.stringify(groupData, null, 2));
+          console.log("📊 Group data members type:", typeof groupData.members);
+          console.log("📊 Group data members isArray:", Array.isArray(groupData.members));
+          console.log("📊 Group data summary:", {
+            depth: groupData.depth,
+            size: groupData.size,
+            membersCount: groupData.members?.length || 0
+          });
+          
+          // Generate proof using content as signal
+          const proofData = await generateSemaphoreProof(identity, groupId, content, groupData);
+          console.log("✅ Proof generated successfully");
+          
+          console.log("📤 Sending anonymous post via relayer...");
+          const response = await sendFeedbackViaRelayer({
+            content,
+            groupId,
+            feedback: proofData.feedback,
+            merkleTreeDepth: proofData.merkleTreeDepth,
+            merkleTreeRoot: proofData.merkleTreeRoot,
+            nullifier: proofData.nullifier,
+            points: proofData.points,
+          });
+          
+          console.log("✅ Anonymous post created successfully:", response);
+          return response;
+        } catch (proofError) {
+          console.error("❌ Failed to generate Semaphore proof:", proofError);
+          console.warn("⚠️ Falling back to non-anonymous post");
+          // Fall through to non-anonymous post
+        }
+      }
+
+      // Fallback to non-anonymous post via direct contract call
+      console.log("Using non-anonymous post via direct contract call");
+      await writeContract({
         address: CONTRACT_CONFIG.address,
         abi: CONTRACT_CONFIG.abi,
         functionName: "createMainPost",
         args: [groupId, content],
       });
-
-      console.log("Main post created successfully:", response);
+      console.log("Main post created successfully");
       return true;
     } catch (error) {
       console.error("Error creating main post:", error);

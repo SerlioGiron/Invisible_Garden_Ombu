@@ -3,13 +3,14 @@ import { Contract, JsonRpcProvider } from 'ethers';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { OMBU_CONTRACT_ADDRESS } from '../../src/config/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const router = express.Router();
 
-// Cargar ABI del contrato
+// Load contract ABI
 const abiPath = join(__dirname, '../Ombu.json');
 let OmbuArtifact;
 try {
@@ -21,7 +22,7 @@ try {
 
 router.get('/', async (req, res) => {
   try {
-    // Validar que el ABI esté cargado
+    // Validate that the ABI is loaded
     if (!OmbuArtifact || !OmbuArtifact.abi) {
       return res.status(500).json({
         error: 'Contract ABI not loaded',
@@ -29,29 +30,29 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Configurar provider (no necesitamos signer porque es una llamada de lectura)
+    // Configure provider (no need for signer because it's a read-only call)
     const provider = new JsonRpcProvider(process.env.RPC_URL);
     const contract = new Contract(
-      process.env.CONTRACT_ADDRESS,
+      OMBU_CONTRACT_ADDRESS,
       OmbuArtifact.abi,
       provider
     );
 
     console.log('📋 Fetching groups array...');
-    console.log('   Contract:', process.env.CONTRACT_ADDRESS);
+    console.log('   Contract:', OMBU_CONTRACT_ADDRESS);
 
-    // Obtener el número de grupos primero
+    // Get the number of groups first
     const groupCounter = await contract.groupCounter();
     console.log('   Total groups:', groupCounter.toString());
 
-    // Obtener todos los grupos del array
+    // Get all groups from the array
     const groups = [];
     for (let i = 0; i < Number(groupCounter); i++) {
       const groupId = await contract.groups(i);
       groups.push(groupId.toString());
     }
 
-    // Obtener los nombres de los grupos
+    // Get the names of the groups
     const groupsWithNames = await Promise.all(
       groups.map(async (groupId) => {
         const name = await contract.groupNames(groupId);
@@ -73,7 +74,7 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('❌ Error in getGroups route:', error);
 
-    // Manejar errores específicos de ethers
+    // Handle specific ethers errors
     let errorMessage = error.message;
     if (error.code === 'CALL_EXCEPTION') {
       errorMessage = 'Smart contract call failed. Check contract address.';

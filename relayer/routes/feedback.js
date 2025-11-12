@@ -1,61 +1,39 @@
 import express from 'express';
-import { Contract, JsonRpcProvider, Wallet } from 'ethers';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import {validateABI, getContract, handleError} from "../utils/contract.js";
+import { OMBU_CONTRACT_ADDRESS } from '../../src/config/constants.js';
 
 const router = express.Router();
 
-// Cargar ABI del contrato
-const abiPath = join(__dirname, '../../out/Ombu.sol/Ombu.json');
-let OmbuArtifact;
-try {
-  OmbuArtifact = JSON.parse(readFileSync(abiPath, 'utf8'));
-} catch (error) {
-  console.error('❌ Error loading contract ABI:', error.message);
-  console.error('   Make sure to compile contracts with: forge build');
-}
-
 router.post('/', async (req, res) => {
   try {
-    const { groupId, content } = req.body;
+    const { groupId, feedback, content, merkleTreeDepth, merkleTreeRoot, nullifier, points } = req.body;
 
-    // Validación de parámetros requeridos
-    if (!content) {
-      return res.status(400).json({ 
-        error: 'Missing required parameter: content' 
+    // Validate input
+    if (groupId === undefined || feedback === undefined || !merkleTreeDepth || !merkleTreeRoot || !nullifier || !content || points === undefined) {
+      return res.status(400).json({
+        error: 'Missing required parameter',
+        details: 'groupId, feedback (uint256), merkleTreeDepth, merkleTreeRoot, nullifier, content, and points are required'
       });
     }
 
-    // groupId es opcional, por defecto 0 (Invisible Garden)
-    const selectedGroupId = groupId !== undefined ? groupId : 0;
+    // Validate that the ABI is loaded
+    if (!validateABI(res)) return;
 
-    // Validar que el ABI esté cargado
-    if (!OmbuArtifact || !OmbuArtifact.abi) {
-      return res.status(500).json({
-        error: 'Contract ABI not loaded',
-        details: 'Run "forge build" to compile contracts'
-      });
-    }
+    // Get contract instance
+    const {provider, signer, contract} = getContract();
 
-    // Configurar provider y signer
-    const provider = new JsonRpcProvider(process.env.RPC_URL);
-    const signer = new Wallet(process.env.PRIVATE_KEY, provider);
-    const contract = new Contract(
-      process.env.CONTRACT_ADDRESS,
-      OmbuArtifact.abi,
-      signer
-    );
-
-    console.log('📝 Creating main post...');
-    console.log('   Group ID:', selectedGroupId);
+    console.log('   Sending feedback...');
+    console.log('   Group ID:', groupId);
     console.log('   Content:', content);
-    console.log('   Contract:', process.env.CONTRACT_ADDRESS);
+    console.log('   Contract:', OMBU_CONTRACT_ADDRESS);
+    console.log('   Merkle Tree Depth:', merkleTreeDepth);
+    console.log('   Merkle Tree Root:', merkleTreeRoot);
+    console.log('   Nullifier:', nullifier);
+    console.log('   Feedback:', feedback);
+    console.log('   Points array length:', points?.length);
+    console.log('   Points:', points);
 
-    // Verificar balance del signer
+    // Verify signer balance
     const balance = await provider.getBalance(signer.address);
     console.log('   Relayer balance:', balance.toString());
 
@@ -66,16 +44,32 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Ejecutar transacción
+    // Validate points array (must be exactly 8 uint256 values)
+    if (!Array.isArray(points) || points.length !== 8) {
+      return res.status(400).json({
+        error: 'Invalid points array',
+        details: `Points must be an array of exactly 8 uint256 values, got ${points?.length || 0}`
+      });
+    }
+
+    // Execute transaction
+    // Note: feedback must be the exact uint256 value used when generating the Semaphore proof on the client side
+    // Using createMainPost which matches the ABI (sendFeedback in source is compiled as createMainPost)
+    console.log('   Calling contract.createMainPost...');
     const transaction = await contract.createMainPost(
-      selectedGroupId,
-      content
+      groupId,
+      merkleTreeDepth,
+      merkleTreeRoot,
+      nullifier,
+      feedback,
+      content,
+      points
     );
 
     console.log('   Transaction sent:', transaction.hash);
 
     const receipt = await transaction.wait();
-    console.log('✅ Post created successfully in block:', receipt.blockNumber);
+    console.log('✅ Feedback created successfully in block:', receipt.blockNumber);
 
     return res.status(200).json({
       success: true,
@@ -86,20 +80,26 @@ router.post('/', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error in feedback route:', error);
+    console.error('   Error message:', error.message);
+    console.error('   Error code:', error.code);
+    console.error('   Error data:', error.data);
     
-    // Manejar errores específicos de ethers
-    let errorMessage = error.message;
-    if (error.code === 'INSUFFICIENT_FUNDS') {
-      errorMessage = 'Relayer wallet has insufficient funds for gas';
-    } else if (error.code === 'CALL_EXCEPTION') {
-      errorMessage = 'Smart contract call failed. Check parameters or contract state.';
+    // Try to decode the error
+    if (error.data) {
+      console.error('   Error data (hex):', error.data);
+      // Common Semaphore errors:
+      // 0x4aa6bc40 might be related to proof validation failure
+      if (error.data === '0x4aa6bc40' || error.data.startsWith('0x4aa6bc40')) {
+        return res.status(500).json({
+          error: 'Proof validation failed',
+          details: 'The Semaphore proof validation failed. This usually means: 1) The proof was generated with a different merkle tree root than what exists on-chain, 2) The group ID is incorrect, 3) The proof parameters are invalid, or 4) The identity commitment is not a member of the group.',
+          errorData: error.data,
+          suggestion: 'Verify that the local group members match the on-chain group members exactly, and that the proof was generated with the correct group data.'
+        });
+      }
     }
-
-    return res.status(500).json({
-      error: 'Transaction failed',
-      message: errorMessage,
-      code: error.code
-    });
+    
+    return handleError(error, res);
   }
 });
 

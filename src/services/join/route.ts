@@ -1,5 +1,6 @@
 import { Contract, JsonRpcProvider, Wallet } from "ethers"
 import OmbuArtifact from "../../../out/Ombu.sol/Ombu.json"
+import { OMBU_CONTRACT_ADDRESS } from "../../config/constants"
 
 export async function POST(req: Request) {
     if (typeof process.env.PRIVATE_KEY !== "string") {
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
 
     const privateKey = process.env.PRIVATE_KEY
     const rpcUrl = process.env.RPC_URL || process.env.VITE_PUBLIC_RPC_URL as string
-    const contractAddress = process.env.VITE_PUBLIC_CONTRACT_ADDRESS as string
+    const contractAddress = OMBU_CONTRACT_ADDRESS as string
 
     const provider = new JsonRpcProvider(rpcUrl)
 

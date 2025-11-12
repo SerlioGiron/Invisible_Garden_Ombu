@@ -3,13 +3,14 @@ import { Contract, JsonRpcProvider } from 'ethers';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { OMBU_CONTRACT_ADDRESS } from '../../src/config/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const router = express.Router();
 
-// Cargar ABI del contrato
+// Load contract ABI
 const abiPath = join(__dirname, '../Ombu.json');
 let OmbuArtifact;
 try {
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
   try {
     const { identityCommitment, groupId } = req.query;
 
-    // Validación de entrada
+    // Validate input
     if (!identityCommitment) {
       return res.status(400).json({
         error: 'Missing required parameter',
@@ -38,7 +39,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Validar que el ABI esté cargado
+    // Validate that the ABI is loaded
     if (!OmbuArtifact || !OmbuArtifact.abi) {
       return res.status(500).json({
         error: 'Contract ABI not loaded',
@@ -46,10 +47,10 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Configurar provider (no necesitamos signer porque es una llamada de lectura)
+    // Configure provider (no need for signer because it's a read-only call)
     const provider = new JsonRpcProvider(process.env.RPC_URL);
     const contract = new Contract(
-      process.env.CONTRACT_ADDRESS,
+      OMBU_CONTRACT_ADDRESS,
       OmbuArtifact.abi,
       provider
     );
@@ -57,9 +58,9 @@ router.get('/', async (req, res) => {
     console.log('🔍 Checking group membership...');
     console.log('   Group ID:', groupId);
     console.log('   Identity Commitment:', identityCommitment);
-    console.log('   Contract:', process.env.CONTRACT_ADDRESS);
+    console.log('   Contract:', OMBU_CONTRACT_ADDRESS);
 
-    // Llamar a la función de vista del contrato
+    // Call the contract view function
     const isMember = await contract.isGroupMember(groupId, identityCommitment);
     
     console.log('✅ Membership check completed:', isMember);
@@ -74,7 +75,7 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('❌ Error in checkMember route:', error);
 
-    // Manejar errores específicos de ethers
+    // Handle specific ethers errors
     let errorMessage = error.message;
     if (error.code === 'CALL_EXCEPTION') {
       errorMessage = 'Smart contract call failed. Check if group exists.';

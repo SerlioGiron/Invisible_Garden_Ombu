@@ -3,15 +3,17 @@
  * Handles communication with the backend relayer server
  */
 
+import { DEFAULT_GROUP_ID } from '../config/constants.js';
+
 const RELAYER_URL = import.meta.env.VITE_RELAYER_URL || 'http://localhost:3001';
 
 /**
  * Join the Semaphore group via the relayer
  * @param {string} identityCommitment - The identity commitment to add to the group
- * @param {number} groupId - The group ID (optional, defaults to 1)
+ * @param {number} groupId - The group ID (optional, uses DEFAULT_GROUP_ID from constants)
  * @returns {Promise<{success: boolean, transactionHash: string, blockNumber: number}>}
  */
-export async function joinGroupViaRelayer(identityCommitment, groupId = 1) {
+export async function joinGroupViaRelayer(identityCommitment, groupId = DEFAULT_GROUP_ID) {
   try {
     console.log('🔄 Calling relayer to join group...');
     
@@ -42,10 +44,23 @@ export async function joinGroupViaRelayer(identityCommitment, groupId = 1) {
  * Send feedback via the relayer (creates a main post)
  * @param {Object} params - Post parameters
  * @param {string} params.content - The post content/message
- * @param {number} params.groupId - Group ID (optional, defaults to 0 for "Invisible Garden")
+ * @param {number} params.groupId - Group ID
+ * @param {string|number} params.feedback - The feedback signal (uint256) used in the Semaphore proof
+ * @param {number} params.merkleTreeDepth - The depth of the Merkle tree
+ * @param {string} params.merkleTreeRoot - The root of the Merkle tree
+ * @param {string} params.nullifier - The nullifier to prevent double-spending
+ * @param {number[]} params.points - The proof points array (8 uint256 values)
  * @returns {Promise<{success: boolean, transactionHash: string, blockNumber: number}>}
  */
-export async function sendFeedbackViaRelayer({ content, groupId = 0 }) {
+export async function sendFeedbackViaRelayer({ 
+  content, 
+  groupId, 
+  feedback, 
+  merkleTreeDepth, 
+  merkleTreeRoot, 
+  nullifier, 
+  points 
+}) {
   try {
     console.log('🔄 Calling relayer to create post...');
     
@@ -56,7 +71,12 @@ export async function sendFeedbackViaRelayer({ content, groupId = 0 }) {
       },
       body: JSON.stringify({
         content,
-        groupId
+        groupId,
+        feedback,
+        merkleTreeDepth,
+        merkleTreeRoot,
+        nullifier,
+        points
       }),
     });
 
@@ -67,6 +87,7 @@ export async function sendFeedbackViaRelayer({ content, groupId = 0 }) {
 
     const result = await response.json();
     console.log('✅ Post created successfully:', result);
+    console.log('Transaction hash:', result.transactionHash);
     
     return result;
   } catch (error) {
