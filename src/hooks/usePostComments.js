@@ -6,7 +6,7 @@ import { CONTRACT_CONFIG } from '../services/contract';
 const DEFAULT_GROUP_ID = 5;
 
 /**
- * Hook para obtener todos los posts de un grupo específico
+ * Hook to get all posts from a specific group
  */
 export function useGroupPosts(groupId = DEFAULT_GROUP_ID) {
   const [posts, setPosts] = useState([]);
@@ -14,14 +14,14 @@ export function useGroupPosts(groupId = DEFAULT_GROUP_ID) {
   const [error, setError] = useState(null);
   const publicClient = usePublicClient();
 
-  // Obtener el contador de posts del grupo
+  // Get the post counter for the group
   const { data: postCounter, refetch: refetchCounter } = useReadContract({
     address: CONTRACT_CONFIG.address,
     abi: CONTRACT_CONFIG.abi,
     functionName: 'groupPostCounters',
     args: [groupId],
     query: {
-      staleTime: 30000, // 30 segundos
+      staleTime: 30000, // 30 seconds
       refetchOnWindowFocus: true,
     }
   });
@@ -36,13 +36,12 @@ export function useGroupPosts(groupId = DEFAULT_GROUP_ID) {
       try {
         setIsLoading(true);
         setError(null);
-
         const totalPosts = Number(postCounter);
         console.log(`📊 Fetching ${totalPosts} posts from group ${groupId}...`);
 
         const postsPromises = [];
         
-        // Los posts empiezan desde ID 1
+        // The posts start from ID 1
         for (let i = 1; i <= totalPosts; i++) {
           postsPromises.push(
             publicClient.readContract({
@@ -56,13 +55,11 @@ export function useGroupPosts(groupId = DEFAULT_GROUP_ID) {
 
         const postsData = await Promise.all(postsPromises);
         
-        const formattedPosts = postsData.map((post, index) => ({
-          id: index + 1,
-          author: post[0], // author
-          content: post[1], // content
-          timestamp: Number(post[2]), // timestamp
-          upvotes: Number(post[3]), // upvotes
-          downvotes: Number(post[4]), // downvotes
+        const formattedPosts = postsData.map((post) => ({
+          content: post[0], // content
+          timestamp: Number(post[1]), // timestamp
+          upvotes: Number(post[2]), // upvotes
+          downvotes: Number(post[3]), // downvotes
         }));
 
         setPosts(formattedPosts);
@@ -92,7 +89,7 @@ export function useGroupPosts(groupId = DEFAULT_GROUP_ID) {
 }
 
 /**
- * Hook para obtener un post específico con sus subposts (comentarios)
+ * Hook to get a specific post with its subposts (comments)
  */
 export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
   const [post, setPost] = useState(null);
@@ -101,7 +98,7 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
   const [error, setError] = useState(null);
   const publicClient = usePublicClient();
 
-  // Obtener el post principal
+  // Get the main post
   const { data: mainPostData, refetch: refetchMainPost } = useReadContract({
     address: CONTRACT_CONFIG.address,
     abi: CONTRACT_CONFIG.abi,
@@ -124,10 +121,8 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
         setIsLoading(true);
         setError(null);
 
-        // Formatear el post principal
+        // Format the main post
         const formattedPost = {
-          id: postId,
-          author: mainPostData[0],
           content: mainPostData[1],
           timestamp: Number(mainPostData[2]),
           upvotes: Number(mainPostData[3]),
@@ -135,11 +130,10 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
         };
         setPost(formattedPost);
 
-        // Intentar obtener subposts (comentarios)
-        // Como no hay contador, intentamos hasta encontrar un post vacío
+        // Try to get subposts (comments)
+        // Since there is no counter, we try until we find an empty post
         const fetchedSubPosts = [];
-        let subPostId = 1;
-        let maxAttempts = 100; // Límite de seguridad
+        let maxAttempts = 100; // Safety limit
 
         while (subPostId <= maxAttempts) {
           try {
@@ -150,14 +144,12 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
               args: [groupId, postId, subPostId],
             });
 
-            // Si el autor es address(0), significa que no existe
+            // If the author is address(0), it means it does not exist
             if (subPostData[0] === '0x0000000000000000000000000000000000000000') {
               break;
             }
 
             fetchedSubPosts.push({
-              id: subPostId,
-              author: subPostData[0],
               content: subPostData[1],
               timestamp: Number(subPostData[2]),
               upvotes: Number(subPostData[3]),
@@ -166,7 +158,7 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
 
             subPostId++;
           } catch {
-            // Si hay error, asumimos que no hay más subposts
+            // If there is an error, we assume there are no more subposts
             break;
           }
         }
@@ -198,7 +190,7 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
   };
 }
 
-// Mantener compatibilidad con el nombre anterior
+// Keep compatibility with the previous name
 export function usePostComments(postId, groupId = DEFAULT_GROUP_ID) {
   return usePostWithComments(groupId, postId);
 }
