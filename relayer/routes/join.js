@@ -1,9 +1,9 @@
 import express from "express";
-import {Contract, JsonRpcProvider, Wallet} from "ethers";
+import {Contract, JsonRpcProvider, Wallet, Interface} from "ethers";
 import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
-import {MongoClient, ServerApiVersion} from "mongodb";
+import {MongoClient} from "mongodb";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -208,34 +208,42 @@ router.post("/", async (req, res) => {
             console.log("   Gas used:", receipt.gasUsed.toString());
             console.log("   Status:", receipt.status === 1 ? "Success" : "Failed");
 
-            // Parse the hexadecimal data from logs (now available in receipt)
-            if (receipt.logs.length > 0 && receipt.logs[0].data) {
-                const hexData = receipt.logs[0].data;
-                console.log("🔵 Parsing hex data:", hexData);
-
-                // Remove '0x' prefix
-                const cleanHex = hexData.slice(2);
-                console.log("   Clean hex (without 0x):", cleanHex);
-                console.log("   Total length:", cleanHex.length, "characters");
-
-                // Split into three 64-character strings (32 bytes each)
-                const part1 = cleanHex.slice(0, 64);
-                const part2 = cleanHex.slice(64, 128);
-                const part3 = cleanHex.slice(128, 192);
-
-                console.log("   Part 1 (hex):", part1);
-                console.log("   Part 2 (hex):", part2);
-                console.log("   Part 3 (hex):", part3);
-
-                // Convert to decimal
-                const decimal1 = BigInt("0x" + part1).toString();
-                const decimal2 = BigInt("0x" + part2).toString();
-                const decimal3 = BigInt("0x" + part3).toString();
-
-                console.log("✅ Decoded values:");
-                console.log("   Part 1 (decimal):", decimal1);
-                console.log("   Part 2 (decimal):", decimal2);
-                console.log("   Part 3 (decimal):", decimal3);
+            const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
+            const MemberAddedEventAbi = "event MemberAdded(uint256 indexed groupId, uint256 index, uint256 identityCommitment, uint256 merkleTreeRoot)";
+            const iface = new Interface([MemberAddedEventAbi]);
+            
+            let memberAddedEvent = null;
+            let eventData = null;
+            
+            // Find the MemberAdded event from Semaphore contract
+            for (const log of receipt.logs) {
+                if (log.address.toLowerCase() === SEMAPHORE_ADDRESS.toLowerCase()) {
+                    try {
+                        const parsed = iface.parseLog({
+                            topics: log.topics,
+                            data: log.data
+                        });
+                        
+                        if (parsed && parsed.name === "MemberAdded") {
+                            memberAddedEvent = parsed;
+                            eventData = {
+                                index: parsed.args.index.toString(),
+                                identityCommitment: parsed.args.identityCommitment.toString(),
+                                merkleTreeRoot: parsed.args.merkleTreeRoot.toString()
+                            };
+                            console.log("✅ Found MemberAdded event:");
+                            console.log("   Index:", eventData.index);
+                            console.log("   Identity Commitment:", eventData.identityCommitment);
+                            console.log("   Merkle Tree Root:", eventData.merkleTreeRoot);
+                            break;
+                        }
+                    } catch (parseError) {
+                        continue;
+                    }
+                }
+            }
+            
+            if (memberAddedEvent && eventData) {
 
                 // Store in MongoDB
                 let mongoClient;
@@ -243,32 +251,32 @@ router.post("/", async (req, res) => {
                     console.log("🔵 Connecting to MongoDB...");
                     console.log("   MONGODB_URI:", process.env.MONGODB_URI ? "Set" : "NOT SET");
                     
-                    mongoClient = new MongoClient(process.env.MONGODB_URI, {
-                        serverApi: {
-                            version: ServerApiVersion.v1,
-                            strict: true,
-                            deprecationErrors: true,
-                        }
-                    });
+                    const clientOptions = {
+                        // Connection timeouts
+                        connectTimeoutMS: 30000,
+                        serverSelectionTimeoutMS: 30000,
+                        // Retry configuration
+                        retryWrites: true,
+                        retryReads: true,
+                    };
                     
+                    mongoClient = new MongoClient(process.env.MONGODB_URI, clientOptions);
                     await mongoClient.connect();
-                    await mongoClient.db("admin").command({ ping: 1 });
-                    console.log("✅ Connected to MongoDB");
+                    console.log("✅ MongoDB client connected");
 
                     const database = mongoClient.db("OMBU");
                     const collection = database.collection("Commitments");
 
                     const document = {
                         groupId: selectedGroupId,
-                        identityCommitment: identityCommitment,
+                        identityCommitment: identityCommitment, 
                         transactionHash: receipt.hash,
                         blockNumber: receipt.blockNumber,
                         merkleTreeData: {
-                            value1: decimal1,
-                            value2: decimal2,
-                            value3: decimal3
+                            index: eventData.index, 
+                            identityCommitment: eventData.identityCommitment,   
+                            merkleTreeRoot: eventData.merkleTreeRoot 
                         },
-                        hexData: hexData,
                         timestamp: new Date(),
                     };
 
@@ -280,16 +288,40 @@ router.post("/", async (req, res) => {
                     console.error("❌ MongoDB error:");
                     console.error("   Error message:", mongoError.message);
                     console.error("   Error stack:", mongoError.stack);
-                    // Don't fail the entire request if MongoDB fails
+                    console.error("   Error name:", mongoError.name);
+                    console.error("   Error code:", mongoError.code);
+                    
+                    // Provide helpful diagnostic information
+                    if (mongoError.message?.includes("SSL") || mongoError.message?.includes("TLS") || 
+                        mongoError.message?.includes("alert")) {
+                        console.error("   🔍 SSL/TLS Error detected. Common causes:");
+                        console.error("      - IP address not whitelisted on MongoDB Atlas");
+                        console.error("      - Invalid or malformed connection string");
+                        console.error("      - Network/firewall blocking TLS connection");
+                        console.error("      - Node.js TLS version incompatibility");
+                    } else if (mongoError.name === "MongoServerSelectionError" || 
+                               mongoError.code === "ENOTFOUND") {
+                        console.error("   🔍 Connection Error detected. Common causes:");
+                        console.error("      - MongoDB instance is down or unreachable");
+                        console.error("      - IP address not whitelisted on MongoDB Atlas");
+                        console.error("      - Invalid connection string hostname");
+                        console.error("      - Network connectivity issues");
+                    }
+                    
                 } finally {
                     if (mongoClient) {
-                        await mongoClient.close();
-                        console.log("✅ MongoDB connection closed");
+                        try {
+                            await mongoClient.close();
+                            console.log("✅ MongoDB connection closed");
+                        } catch (closeError) {
+                            console.warn("⚠️  Error closing MongoDB connection:", closeError.message);
+                        }
                     }
                 }
+            } else {
+                console.warn("⚠️  MemberAdded event not found in transaction logs");
             }
 
-            // Add to cache for instant retrieval without event scanning
             if (!groupMembersCache.has(selectedGroupId)) {
                 groupMembersCache.set(selectedGroupId, new Set());
             }
