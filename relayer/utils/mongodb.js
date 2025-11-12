@@ -8,7 +8,7 @@ import {MongoClient} from "mongodb";
  * @returns {Promise<Array<string>>} Array of identity commitments in chronological order
  * @throws {Error} If connection or query fails
  */
-export async function getIdentityCommitmentsInOrder(mongoUri = process.env.MONGODB_URI) {
+export async function getIdentityCommitmentsInOrder() {
     let mongoClient;
     
     try {
@@ -21,7 +21,7 @@ export async function getIdentityCommitmentsInOrder(mongoUri = process.env.MONGO
             retryReads: true,
         };
         
-        mongoClient = new MongoClient(mongoUri, clientOptions);
+        mongoClient = new MongoClient(process.env.MONGODB_URI, clientOptions);
         await mongoClient.connect();
         console.log("✅ MongoDB client connected");
 
@@ -93,7 +93,7 @@ export async function getIdentityCommitmentsInOrder(mongoUri = process.env.MONGO
  * @returns {Promise<Array<string>>} Array of identity commitments in chronological order
  * @throws {Error} If connection or query fails
  */
-export async function getIdentityCommitmentsByGroup(groupId, mongoUri = process.env.MONGODB_URI) {
+export async function getIdentityCommitmentsByGroup(groupId) {
     let mongoClient;
     
     try {
@@ -106,7 +106,7 @@ export async function getIdentityCommitmentsByGroup(groupId, mongoUri = process.
             retryReads: true,
         };
         
-        mongoClient = new MongoClient(mongoUri, clientOptions);
+        mongoClient = new MongoClient(process.env.MONGODB_URI, clientOptions);
         await mongoClient.connect();
         console.log("✅ MongoDB client connected");
 
