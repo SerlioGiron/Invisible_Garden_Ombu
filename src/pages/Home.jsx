@@ -20,30 +20,19 @@ import {
   IconUser,
   IconArrowUp,
   IconArrowDown,
-  IconPlus,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
-import { useContract } from "../hooks/useContract";
 import { usePrivy } from "@privy-io/react-auth";
 import { useGroupPosts } from "../hooks/usePostComments";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { DEFAULT_GROUP_ID } from "../services/contract";
 
 function Home() {
   const navigate = useNavigate();
-  const { posts } = useContract();
   const { authenticated } = usePrivy();
 
   // Using useGroupPosts hook to fetch all posts
   const { posts: groupPosts, isLoading, error, totalPosts: groupTotalPosts } = useGroupPosts(DEFAULT_GROUP_ID);
-  
-  // Log posts to console
-  useEffect(() => {
-    console.log("📊 Group Posts from useGroupPosts:", groupPosts);
-    console.log("📈 Total Posts from hook:", groupTotalPosts);
-    console.log("⏳ Loading:", isLoading);
-    if (error) console.error("❌ Error:", error);
-  }, [groupPosts, groupTotalPosts, isLoading, error]);
 
   // Helper function to format timestamp
   function formatTimeAgo(timestamp) {
