@@ -3,6 +3,7 @@ import { Contract, JsonRpcProvider } from 'ethers';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { OMBU_CONTRACT_ADDRESS } from '../../src/config/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,13 +33,13 @@ router.get('/', async (req, res) => {
     // Configure provider (no need for signer because it's a read-only call)
     const provider = new JsonRpcProvider(process.env.RPC_URL);
     const contract = new Contract(
-      process.env.CONTRACT_ADDRESS,
+      OMBU_CONTRACT_ADDRESS,
       OmbuArtifact.abi,
       provider
     );
 
     console.log('📋 Fetching groups array...');
-    console.log('   Contract:', process.env.CONTRACT_ADDRESS);
+    console.log('   Contract:', OMBU_CONTRACT_ADDRESS);
 
     // Get the number of groups first
     const groupCounter = await contract.groupCounter();

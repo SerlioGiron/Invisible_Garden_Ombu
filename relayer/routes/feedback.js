@@ -1,5 +1,6 @@
 import express from 'express';
 import {validateABI, getContract, handleError} from "../utils/contract.js";
+import { OMBU_CONTRACT_ADDRESS } from '../../src/config/constants.js';
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ router.post('/', async (req, res) => {
     console.log('   Sending feedback...');
     console.log('   Group ID:', groupId);
     console.log('   Content:', content);
-    console.log('   Contract:', process.env.CONTRACT_ADDRESS);
+    console.log('   Contract:', OMBU_CONTRACT_ADDRESS);
     console.log('   Merkle Tree Depth:', merkleTreeDepth);
     console.log('   Merkle Tree Root:', merkleTreeRoot);
     console.log('   Nullifier:', nullifier);

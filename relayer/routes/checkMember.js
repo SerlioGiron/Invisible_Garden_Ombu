@@ -3,6 +3,7 @@ import { Contract, JsonRpcProvider } from 'ethers';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { OMBU_CONTRACT_ADDRESS } from '../../src/config/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,7 +50,7 @@ router.get('/', async (req, res) => {
     // Configure provider (no need for signer because it's a read-only call)
     const provider = new JsonRpcProvider(process.env.RPC_URL);
     const contract = new Contract(
-      process.env.CONTRACT_ADDRESS,
+      OMBU_CONTRACT_ADDRESS,
       OmbuArtifact.abi,
       provider
     );
@@ -57,7 +58,7 @@ router.get('/', async (req, res) => {
     console.log('🔍 Checking group membership...');
     console.log('   Group ID:', groupId);
     console.log('   Identity Commitment:', identityCommitment);
-    console.log('   Contract:', process.env.CONTRACT_ADDRESS);
+    console.log('   Contract:', OMBU_CONTRACT_ADDRESS);
 
     // Call the contract view function
     const isMember = await contract.isGroupMember(groupId, identityCommitment);

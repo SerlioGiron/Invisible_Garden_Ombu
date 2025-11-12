@@ -4,7 +4,7 @@ import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
 import {MongoClient} from "mongodb";
-import { SEMAPHORE_CONTRACT_ADDRESS } from "../../src/config/constants.js";
+import { SEMAPHORE_CONTRACT_ADDRESS, OMBU_CONTRACT_ADDRESS } from "../../src/config/constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,16 +56,16 @@ router.post("/", async (req, res) => {
         console.log("🔵 Configuring provider and signer...");
         console.log("   RPC_URL:", process.env.RPC_URL ? "Set" : "NOT SET");
         console.log("   PRIVATE_KEY:", process.env.PRIVATE_KEY ? "Set" : "NOT SET");
-        console.log("   CONTRACT_ADDRESS:", process.env.CONTRACT_ADDRESS || "NOT SET");
+        console.log("   CONTRACT_ADDRESS:", OMBU_CONTRACT_ADDRESS);
 
         const provider = new JsonRpcProvider(process.env.RPC_URL);
         const signer = new Wallet(process.env.PRIVATE_KEY, provider);
         console.log("✅ Provider and signer configured");
         console.log("   Signer address:", signer.address);
 
-        const contract = new Contract(process.env.CONTRACT_ADDRESS, OmbuArtifact.abi, signer);
+        const contract = new Contract(OMBU_CONTRACT_ADDRESS, OmbuArtifact.abi, signer);
         console.log("✅ Contract instance created");
-        console.log("   Contract address:", process.env.CONTRACT_ADDRESS);
+        console.log("   Contract address:", OMBU_CONTRACT_ADDRESS);
 
         // Get the latest Semaphore group ID from the Ombu contract (last group in groups array)
         console.log("🔵 Fetching latest group ID from contract...");
@@ -107,7 +107,7 @@ router.post("/", async (req, res) => {
         console.log("📝 Joining group...");
         console.log("   Semaphore Group ID:", selectedGroupId);
         console.log("   Identity Commitment:", identityCommitment);
-        console.log("   Contract:", process.env.CONTRACT_ADDRESS);
+        console.log("   Contract:", OMBU_CONTRACT_ADDRESS);
 
         // Verify signer balance
         console.log("🔵 Checking relayer balance...");
@@ -153,7 +153,7 @@ router.post("/", async (req, res) => {
                 error: "Group does not exist in Semaphore",
                 details: `The group ID ${selectedGroupId} stored in the Ombu contract does not exist in Semaphore. This usually means the contract wasn't properly initialized or the group was deleted. Please verify the contract deployment and group creation.`,
                 groupId: selectedGroupId,
-                contractAddress: process.env.CONTRACT_ADDRESS,
+                contractAddress: OMBU_CONTRACT_ADDRESS,
             });
         }
 

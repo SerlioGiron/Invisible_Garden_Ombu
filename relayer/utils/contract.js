@@ -2,6 +2,7 @@ import {Contract, JsonRpcProvider, Wallet} from "ethers";
 import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
+import { OMBU_CONTRACT_ADDRESS } from "../../src/config/constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,7 +31,7 @@ export function validateABI(res) {
 export function getContract() {
     const provider = new JsonRpcProvider(process.env.RPC_URL);
     const signer = new Wallet(process.env.PRIVATE_KEY, provider);
-    const contract = new Contract(process.env.CONTRACT_ADDRESS, OmbuArtifact.abi, signer);
+    const contract = new Contract(OMBU_CONTRACT_ADDRESS, OmbuArtifact.abi, signer);
     return {provider, signer, contract};
 }
 

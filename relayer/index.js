@@ -7,6 +7,7 @@ import checkMemberRoute from './routes/checkMember.js';
 import getGroupsRoute from './routes/getGroups.js';
 import membersRoute from './routes/members.js';
 import adminRoute from './routes/admin.js';
+import { OMBU_CONTRACT_ADDRESS } from '../src/config/constants.js';
 
 dotenv.config();
 
@@ -21,11 +22,6 @@ if (!process.env.PRIVATE_KEY) {
 
 if (!process.env.RPC_URL) {
   console.error('❌ Error: RPC_URL not set in .env file');
-  process.exit(1);
-}
-
-if (!process.env.CONTRACT_ADDRESS) {
-  console.error('❌ Error: CONTRACT_ADDRESS not set in .env file');
   process.exit(1);
 }
 
@@ -56,8 +52,8 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     message: 'Relayer is running',
-    contract: process.env.CONTRACT_ADDRESS,
-    network: process.env.RPC_URL
+    contract: OMBU_CONTRACT_ADDRESS,
+    network: process.env.RPC_URL || process.env.VITE_PUBLIC_RPC_URL
   });
 });
 
@@ -91,8 +87,8 @@ app.listen(PORT, () => {
   console.log(`   Ombu Relayer Server`);
   console.log('   ====================================');
   console.log(`   🌐 URL: http://localhost:${PORT}`);
-  console.log(`   📡 Network: ${process.env.RPC_URL}`);
-  console.log(`   📝 Contract: ${process.env.CONTRACT_ADDRESS}`);
+  console.log(`   📡 Network: ${process.env.RPC_URL || process.env.VITE_PUBLIC_RPC_URL}`);
+  console.log(`   📝 Contract: ${OMBU_CONTRACT_ADDRESS}`);
   console.log('   ====================================');
   console.log('');
 });
