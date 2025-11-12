@@ -40,7 +40,6 @@ Example variables:
 VITE_LOGO=src/assets/imagotipo.png
 VITE_PUBLIC_RPC_URL="https://arbitrum-sepolia.drpc.org"
 VITE_PUBLIC_CHAIN_ID="421614"
-VITE_PUBLIC_CONTRACT_ADDRESS=""
 VITE_AI_BACKEND_URL="http://localhost:3000"
 VITE_PRIVY_APP_ID="your-privy-app-id"
 VITE_PRIVY_CLIENT_ID="your-privy-client-id"

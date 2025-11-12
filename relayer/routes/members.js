@@ -1,11 +1,12 @@
 import express from "express";
 import {Contract, JsonRpcProvider} from "ethers";
 import {getIdentityCommitmentsByGroup} from "../utils/mongodb.js";
+import { SEMAPHORE_CONTRACT_ADDRESS } from "../../src/config/constants.js";
 
 const router = express.Router();
 
-// Semaphore contract address on Arbitrum Sepolia
-const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
+// Semaphore contract address from constants
+const SEMAPHORE_ADDRESS = SEMAPHORE_CONTRACT_ADDRESS;
 
 router.get("/:groupId", async (req, res) => {
     try {

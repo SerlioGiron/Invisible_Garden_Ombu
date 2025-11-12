@@ -1,6 +1,12 @@
 // src/services/contract.js
+import { CONTRACT_CONFIG as IMPORTED_CONTRACT_CONFIG, DEFAULT_GROUP_ID } from '../config/constants.js';
+
+// Re-export DEFAULT_GROUP_ID from constants
+export { DEFAULT_GROUP_ID };
+
+// CONTRACT_CONFIG with ABI - maintains backward compatibility
 export const CONTRACT_CONFIG = {
-    address: "0x3F70431e4ccc1DD4e6d0f8394a4ecc2e67767358",
+    address: IMPORTED_CONTRACT_CONFIG.address,
     abi: [
         {inputs: [{internalType: "address", name: "_semaphoreAddress", type: "address"}], stateMutability: "nonpayable", type: "constructor"},
         {anonymous: false, inputs: [{indexed: false, internalType: "address", name: "_newAdmin", type: "address"}], name: "change_Admin", type: "event"},
@@ -215,4 +221,3 @@ export const categories = [
     {value: "vida-universitaria", label: "Vida Universitaria", color: "violet"},
 ];
 
-export const DEFAULT_GROUP_ID = 5;

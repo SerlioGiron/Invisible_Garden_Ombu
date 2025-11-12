@@ -1,9 +1,10 @@
 import {SemaphoreEthers} from "@semaphore-protocol/data";
 import "dotenv/config";
+import { SEMAPHORE_CONTRACT_ADDRESS, DEFAULT_GROUP_ID } from "../src/config/constants.js";
 
 const RPC_URL = process.env.RPC_URL;
-const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
-const groupId = "5"; // Test with group ID 5
+const SEMAPHORE_ADDRESS = SEMAPHORE_CONTRACT_ADDRESS;
+const groupId = String(DEFAULT_GROUP_ID); // Convert to string for SemaphoreEthers
 
 async function testSemaphoreEthers() {
     console.log("🔵 Testing SemaphoreEthers...");

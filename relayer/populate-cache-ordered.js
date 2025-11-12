@@ -1,10 +1,11 @@
 import {Contract, JsonRpcProvider, ethers} from "ethers";
 import "dotenv/config";
 import {groupMembersCache} from "./routes/join.js";
+import { SEMAPHORE_CONTRACT_ADDRESS, DEFAULT_GROUP_ID } from "../src/config/constants.js";
 
 const RPC_URL = process.env.RPC_URL;
-const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
-const GROUP_ID = 5;
+const SEMAPHORE_ADDRESS = SEMAPHORE_CONTRACT_ADDRESS;
+const GROUP_ID = DEFAULT_GROUP_ID;
 
 async function populateCacheInOrder() {
     console.log("🔄 Populating cache with members in correct order...\n");

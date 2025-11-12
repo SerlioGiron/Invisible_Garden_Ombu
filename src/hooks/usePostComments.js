@@ -1,9 +1,7 @@
 // src/hooks/usePostComments.js
 import { useState, useEffect } from 'react';
 import { useReadContract, usePublicClient } from 'wagmi';
-import { CONTRACT_CONFIG } from '../services/contract';
-
-const DEFAULT_GROUP_ID = 5;
+import { CONTRACT_CONFIG, DEFAULT_GROUP_ID } from '../services/contract';
 
 /**
  * Hook to get all posts from a specific group
