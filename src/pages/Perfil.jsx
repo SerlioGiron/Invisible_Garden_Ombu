@@ -29,7 +29,7 @@ import { useContract } from '../hooks/useContract';
 import PostCard from '../components/PostCard';
 
 function Perfil() {
-  // 1. Obtener datos del usuario y sus posts desde el blockchain
+  // Get user data and their posts from the blockchain
   const {
     userAddress,
     posts: allPosts,
@@ -38,18 +38,18 @@ function Perfil() {
   } = useContract();
   const { postIds, isLoading: isLoadingIds } = getPostsByAuthor(userAddress);
 
-  // Filtrar los posts que pertenecen al usuario actual
+  // Filter posts that belong to the current user
   const userPosts = (allPosts || [])
     .filter((post) =>
       (postIds || []).map((id) => parseInt(id.toString())).includes(post.id)
     )
     .sort((a, b) => b.id - a.id);
 
-  // Estadísticas basadas en datos del blockchain (ejemplos)
+  // Statistics based on blockchain data (examples)
   const userStats = {
     posts: userPosts.length,
-    reputation: 850, // Este valor podría venir del contrato en el futuro
-    joinDate: 'Agosto 2025', // Este valor podría venir del contrato en el futuro
+    reputation: 850, // This value could come from the contract in the future
+    joinDate: 'August 2025', // This value could come from the contract in the future
   };
 
   if (isLoadingPosts || isLoadingIds) {
@@ -58,7 +58,7 @@ function Perfil() {
         <Center style={{ height: '50vh' }}>
           <Stack align="center">
             <Loader size="lg" />
-            <Text c="dimmed">Cargando perfil del blockchain...</Text>
+            <Text c="dimmed">Loading profile from blockchain...</Text>
           </Stack>
         </Center>
       </Container>
@@ -68,7 +68,7 @@ function Perfil() {
   return (
     <Container size="xl">
       <Stack gap="xl">
-        {/* Header del Perfil anónimo */}
+        {/* Anonymous Profile Header */}
         <Paper withBorder p="xl" radius="md">
           <Grid align="center">
             <Grid.Col span={{ base: 12, md: "auto" }}>
@@ -82,15 +82,15 @@ function Perfil() {
                 <Title order={2} size="h3" align="left">
                   {userAddress
                     ? `${userAddress.substring(0, 6)}...${userAddress.substring(38)}`
-                    : 'Usuario Anónimo'}
+                    : 'Anonymous User'}
                 </Title>
                 <Group gap="md">
                   <Badge color="gray" variant="light" size="sm">
-                    Dirección de Wallet
+                    Wallet Address
                   </Badge>
                   <Group gap="xs">
                     <IconCalendar size={16} color="var(--mantine-color-gray-6)" />
-                    <Text size="sm" c="dimmed">Miembro desde {userStats.joinDate}</Text>
+                    <Text size="sm" c="dimmed">Member since {userStats.joinDate}</Text>
                   </Group>
                 </Group>
               </Stack>
@@ -98,12 +98,12 @@ function Perfil() {
           </Grid>
         </Paper>
 
-        {/* Estadísticas */}
+        {/* Statistics */}
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
           <Card withBorder p="md" radius="md">
             <Stack align="center" gap="xs" py="md">
               <Text fw={700} size="xl" c="blue">{userStats.posts}</Text>
-              <Text size="sm" c="dimmed">Publicaciones</Text>
+              <Text size="sm" c="dimmed">Posts</Text>
             </Stack>
           </Card>
           <Card withBorder p="md" radius="md">
@@ -118,19 +118,19 @@ function Perfil() {
                   </Center>
                 }
               />
-              <Text size="sm" c="dimmed" ta="center">Reputación<br/>{userStats.reputation}/1000</Text>
+              <Text size="sm" c="dimmed" ta="center">Reputation<br/>{userStats.reputation}/1000</Text>
             </Stack>
           </Card>
         </SimpleGrid>
 
-        {/* Tabs de contenido */}
+        {/* Content Tabs */}
         <Tabs defaultValue="posts" variant="outline">
           <Tabs.List>
             <Tabs.Tab value="posts" leftSection={<IconList size={16} />}>
-              Mis Publicaciones ({userPosts.length})
+              My Posts ({userPosts.length})
             </Tabs.Tab>
             {/* <Tabs.Tab value="achievements" leftSection={<IconTrophy size={16} />}>
-              Logros
+              Achievements
             </Tabs.Tab> */}
           </Tabs.List>
 
@@ -140,7 +140,7 @@ function Perfil() {
                 userPosts.map((post) => <PostCard key={post.id} post={post} />)
               ) : (
                 <Paper p="xl" withBorder radius="md" style={{ textAlign: 'center' }}>
-                  <Text c="dimmed">Aún no has realizado ninguna publicación.</Text>
+                  <Text c="dimmed">You haven't made any posts yet.</Text>
                 </Paper>
               )}
             </Stack>
@@ -150,7 +150,7 @@ function Perfil() {
             <Paper withBorder p="md" radius="md">
               <Stack align="center" gap="md">
                 <IconTrophy size={40} color="var(--mantine-color-gray-5)" />
-                <Text c="dimmed">La sección de logros estará disponible próximamente.</Text>
+                <Text c="dimmed">The achievements section will be available soon.</Text>
               </Stack>
             </Paper>
           </Tabs.Panel> */}

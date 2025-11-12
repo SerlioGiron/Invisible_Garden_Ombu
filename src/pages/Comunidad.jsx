@@ -16,7 +16,7 @@ import {
   Center,
   Loader,
   Alert,
-  TagsInput, // 1. Importar TagsInput
+  TagsInput,
 } from "@mantine/core";
 import {
   IconArrowUp,
@@ -27,51 +27,50 @@ import {
   IconTrendingUp,
   IconAlertCircle,
   IconRefresh,
-  IconSearch, // 2. Importar el ícono de búsqueda
+  IconSearch,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import PostCard from "../components/PostCard";
 import { categories } from "../services/contract";
 import { useContract } from "../hooks/useContract";
-import CreateIdentity from "../components/CreateIdentity";
 
 function Comunidad() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("recent");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchTags, setSearchTags] = useState([]); // 3. Añadir estado para los tags de búsqueda
+  const [searchTags, setSearchTags] = useState([]);
 
-  // Usar el hook del contrato
+  // Use the contract hook
   const { posts, isLoadingPosts, refetchPosts, userAddress, isUsingFallback } =
     useContract();
 
-  // Lógica de filtrado y ordenamiento en cadena
+  // Filtering and sorting logic
   const displayedPosts = posts
     .filter((post) => {
-      // 4.1: Filtrar por categoría
+      // Filter by category
       return selectedCategory === "all" || post.category === selectedCategory;
     })
     .filter((post) => {
-      // 4.2: Filtrar por tags de búsqueda
+      // Filter by search tags
       if (searchTags.length === 0) {
-        return true; // Si no hay tags de búsqueda, mostrar todos
+        return true; // If no search tags, show all
       }
-      // Comprobar si alguno de los tags del post está en los tags de búsqueda
+      // Check if any of the post's tags are in the search tags
       return post.topics && post.topics.some((tag) => searchTags.includes(tag));
     })
     .filter((post) => {
-      // 4.3: Filtrar para la pestaña "trending"
+      // Filter for the "trending" tab
       if (activeTab === "trending") {
         return post.upvotes > 50;
       }
       return true;
     })
     .sort((a, b) => {
-      // 4.4: Ordenar según la pestaña activa
+      // Sort according to the active tab
       if (activeTab === "trending") {
-        return b.upvotes - a.upvotes; // Ordenar por más upvotes
+        return b.upvotes - a.upvotes; // Sort by most upvotes
       }
-      return b.id - a.id; // Ordenar por más reciente
+      return b.id - a.id; // Sort by most recent
     });
 
   const handleNewPost = () => {
@@ -84,7 +83,7 @@ function Comunidad() {
         <Center style={{ height: "50vh" }}>
           <Stack align="center">
             <Loader size="lg" />
-            <Text c="dimmed">Cargando posts del blockchain...</Text>
+            <Text c="dimmed">Loading posts from blockchain...</Text>
           </Stack>
         </Center>
       </Container>
@@ -98,11 +97,10 @@ function Comunidad() {
   return (
     <Container size="xl">
       <Stack gap="lg">
-        {/* ...código existente de Alerta y Header... */}
         <Group justify="space-between" align="center">
           <Group>
-            <Title size="h2">Comunidad Universitaria</Title>
-            <CreateIdentity onIdentityCreated={handleIdentityCreated} />
+            <Title size="h2">University Community</Title>
+            {/* <CreateIdentity onIdentityCreated={handleIdentityCreated} /> */}
           </Group>
           <Button
             leftSection={<IconPlus size={16} />}
@@ -111,20 +109,20 @@ function Comunidad() {
             disabled={!userAddress}
             radius="md"
           >
-            Nueva publicación
+            New Post
           </Button>
         </Group>
         <Text c="dimmed" size="sm" align="left">
-          Comparte, discute y conecta con otros estudiantes en el blockchain
+          Share, discuss and connect with other students on the blockchain
         </Text>
 
         <Divider />
 
-        {/* Filtros y Tabs */}
+        {/* Filters and Tabs */}
         <Group justify="space-between">
           <Tabs value={activeTab} onChange={setActiveTab}>
             <Tabs.List>
-              <Tabs.Tab value="recent">Recientes</Tabs.Tab>
+              <Tabs.Tab value="recent">Recent</Tabs.Tab>
               <Tabs.Tab
                 value="trending"
                 leftSection={<IconTrendingUp size={14} />}
@@ -134,19 +132,17 @@ function Comunidad() {
             </Tabs.List>
           </Tabs>
 
-          {/* 5. Añadir el componente TagsInput y agruparlo con el Select */}
           <Group align="space-between" w="100%">
             <TagsInput
-              placeholder="Buscar por tema..."
+              placeholder="Search by topic..."
               value={searchTags}
               onChange={setSearchTags}
               leftSection={<IconSearch size={16} />}
               clearable
               flex={1}
-              // w={250}x
             />
             <Select
-              placeholder="Filtrar por categoría"
+              placeholder="Filter by category"
               data={categories}
               value={selectedCategory}
               onChange={setSelectedCategory}
@@ -157,12 +153,12 @@ function Comunidad() {
           </Group>
         </Group>
 
-        {/* Feed de posts */}
+        {/* Posts Feed */}
         <div>
           {displayedPosts.length === 0 ? (
             <Paper p="xl" radius="md" style={{ textAlign: "center" }}>
               <Text c="dimmed">
-                No se encontraron posts con los filtros actuales.
+                No posts found with the current filters.
               </Text>
             </Paper>
           ) : (

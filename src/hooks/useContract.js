@@ -6,6 +6,7 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useEstimateGas,
+  usePublicClient,
 } from "wagmi";
 import {
   CONTRACT_CONFIG,
@@ -13,13 +14,20 @@ import {
   REVERSE_CATEGORY_MAPPING,
 } from "../services/contract";
 import { getFallbackData } from "../services/fallbackData";
+import { sendFeedbackViaRelayer } from "../services/relayerApi";
+import { 
+  getSemaphoreIdentityFromStorage, 
+  generateSemaphoreProof, 
+  fetchGroupData 
+} from "../services/semaphoreProof";
 
 export function useContract() {
   const { address: userAddress } = useAccount();
   const { writeContract, data: hash, isPending } = useWriteContract();
+  const publicClient = usePublicClient();
   const [useFallback, setUseFallback] = useState(false);
 
-  // Función para obtener todos los posts
+  // Function to get all posts
   const {
     data: rawPosts,
     isLoading: isLoadingPosts,
@@ -30,24 +38,24 @@ export function useContract() {
     abi: CONTRACT_CONFIG.abi,
     functionName: "getAllPosts",
     query: {
-      staleTime: 10000, // 10 segundos
-      cacheTime: 300000, // 5 minutos
+      staleTime: 10000, // 10 seconds
+      cacheTime: 300000, // 5 minutes
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      refetchInterval: 30000, // Refetch automático cada 30 segundos
+      refetchInterval: 30000, // Auto refetch every 30 seconds
     },
   });
 
-  // Detectar errores de rate limiting y activar fallback
+  // Detect rate limiting errors and activate fallback
   useEffect(() => {
     if (
       error?.message?.includes("429") ||
       error?.message?.includes("Too Many Requests")
     ) {
       setUseFallback(true);
-      console.warn("Rate limit detectado, usando datos de respaldo");
+      console.warn("Rate limit detected, using fallback data");
 
-      // Intentar reconectar después de 1 minuto
+      // Try to reconnect after 1 minute
       setTimeout(() => {
         setUseFallback(false);
         refetchPosts();
@@ -55,24 +63,24 @@ export function useContract() {
     }
   }, [error, refetchPosts]);
 
-  // Transformar posts del blockchain al formato de nuestra UI
+  // Transform posts from blockchain to our UI format
   const transformPost = (post, index) => {
     const timestamp = parseInt(post.timestamp.toString());
     const now = Math.floor(Date.now() / 1000);
     const diff = now - timestamp;
 
     let timeAgo;
-    if (diff < 60) timeAgo = "hace unos segundos";
-    else if (diff < 3600) timeAgo = `hace ${Math.floor(diff / 60)} minutos`;
-    else if (diff < 86400) timeAgo = `hace ${Math.floor(diff / 3600)} horas`;
-    else timeAgo = `hace ${Math.floor(diff / 86400)} días`;
+    if (diff < 60) timeAgo = "a few seconds ago";
+    else if (diff < 3600) timeAgo = `${Math.floor(diff / 60)} minutes ago`;
+    else if (diff < 86400) timeAgo = `${Math.floor(diff / 3600)} hours ago`;
+    else timeAgo = `${Math.floor(diff / 86400)} days ago`;
 
     return {
       id: index,
       title: post.title,
       content: post.content,
       // authorName: `${post.author.substring(0, 6)}...${post.author.substring(38)}`,
-      authorName: `Usuario ${post.author.substring(
+      authorName: `User ${post.author.substring(
         0,
         6
       )}...${post.author.substring(38)}`,
@@ -80,24 +88,24 @@ export function useContract() {
       timeAgo,
       category: CATEGORY_MAPPING[post.category] || "opinion",
       topics: post.topics || [],
-      upvotes: 0, // Se obtendrá por separado
-      downvotes: 0, // Se obtendrá por separado
-      comments: 0, // Se obtendrá por separado
+      upvotes: 0, // Will be obtained separately
+      downvotes: 0, // Will be obtained separately
+      comments: 0, // Will be obtained separately
       trending: false,
     };
   };
 
-  // Obtener posts transformados (con fallback)
+  // Get transformed posts (with fallback)
   const posts = useFallback
     ? getFallbackData()
     : rawPosts
     ? rawPosts.map(transformPost)
     : [];
 
-  // Indicar si estamos usando datos de respaldo
+  // Indicate if we're using fallback data
   const isUsingFallback = useFallback;
 
-  // Función para crear un post
+  // Function to create a post
   const createPost = async (content, category, topics = []) => {
     try {
       const categoryNumber = REVERSE_CATEGORY_MAPPING[category];
@@ -116,7 +124,7 @@ export function useContract() {
     }
   };
 
-  // Función para estimar gas de votación
+  // Function to estimate vote gas
   const estimateVoteGas = async (postId, voteType) => {
     try {
       const functionName = voteType === "up" ? "upvote" : "downvote";
@@ -129,52 +137,52 @@ export function useContract() {
       });
 
       console.log(
-        `Gas estimado para ${voteType}vote:`,
+        `Estimated gas for ${voteType}vote:`,
         gasEstimate.data?.toString()
       );
       return gasEstimate.data;
     } catch (error) {
-      console.error("Error estimando gas:", error);
-      return 100000n; // Fallback conservador
+      console.error("Error estimating gas:", error);
+      return 100000n; // Conservative fallback
     }
   };
 
-  // Función para votar
+  // Function to vote
   const vote = async (postId, voteType) => {
     try {
       const functionName = voteType === "up" ? "upvote" : "downvote";
 
-      // Configuración optimizada de gas
+      // Optimized gas configuration
       await writeContract({
         address: CONTRACT_CONFIG.address,
         abi: CONTRACT_CONFIG.abi,
         functionName,
         args: [postId],
-        gas: 100000n, // Límite de gas más conservador
-        gasPrice: undefined, // Permite que la wallet maneje el precio del gas
+        gas: 100000n, // More conservative gas limit
+        gasPrice: undefined, // Allow wallet to handle gas price
       });
 
       return true;
     } catch (error) {
       console.error("Error voting:", error);
 
-      // Si falla por gas insuficiente, reintentar con más gas
+      // If it fails due to insufficient gas, retry with more gas
       if (
         error.message?.includes("out of gas") ||
         error.message?.includes("insufficient gas")
       ) {
-        console.log("Reintentando con más gas...");
+        console.log("Retrying with more gas...");
         try {
           await writeContract({
             address: CONTRACT_CONFIG.address,
             abi: CONTRACT_CONFIG.abi,
             functionName,
             args: [postId],
-            gas: 150000n, // Gas adicional para el reintento
+            gas: 150000n, // Additional gas for retry
           });
           return true;
         } catch (retryError) {
-          console.error("Error en reintento:", retryError);
+          console.error("Error on retry:", retryError);
           throw retryError;
         }
       }
@@ -183,28 +191,28 @@ export function useContract() {
     }
   };
 
-  // Funcion para hacer un post
+  // Function to create a post
   const post = async (title, content, category, topics = []) => {
     try {
       const functionName = "post";
 
-      console.log("se va a llamar a writeContract");
+      console.log("calling writeContract");
       console.log("args:", [title, content, category, topics]);
       switch (category) {
-        case "Queja":
+        case "Complaint":
           category = 0;
           break;
         case "Opinion":
           category = 1;
           break;
-        case "Sugerencia":
+        case "Suggestion":
           category = 2;
           break;
-        case "Vida universitaria":
+        case "University Life":
           category = 3;
           break;
         default:
-          // Lógica para otras categorías
+          // Logic for other categories
           break;
       }
       const response = await writeContract({
@@ -223,10 +231,10 @@ export function useContract() {
     }
   };
 
-  // Función para agregar un comentario
+  // Function to add a comment
   const addComment = async (postId, content) => {
     try {
-      console.log("Agregando comentario al post:", postId, "Contenido:", content);
+      console.log("Adding comment to post:", postId, "Content:", content);
       
       const response = await writeContract({
         address: CONTRACT_CONFIG.address,
@@ -235,7 +243,7 @@ export function useContract() {
         args: [postId, content],
       });
 
-      console.log("Comentario enviado exitosamente:", response);
+      console.log("Comment sent successfully:", response);
       return true;
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -243,7 +251,91 @@ export function useContract() {
     }
   };
 
-  // Obtener todos los posts de un autor
+  // Function to create a main post
+  // Automatically generates Semaphore proof if identity exists (anonymous)
+  // Otherwise falls back to direct contract call (non-anonymous)
+  const createMainPost = async (groupId, content, feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points) => {
+    try {
+      console.log("Creating main post in group:", groupId, "Content:", content);
+      
+      // If Semaphore proof parameters are explicitly provided, use them
+      if (feedback !== undefined && merkleTreeDepth !== undefined && merkleTreeRoot !== undefined && nullifier !== undefined && points !== undefined) {
+        console.log("Using provided Semaphore proof parameters");
+        const response = await sendFeedbackViaRelayer({ 
+          content, 
+          groupId, 
+          feedback, 
+          merkleTreeDepth, 
+          merkleTreeRoot, 
+          nullifier, 
+          points 
+        });
+        console.log("Main post created successfully:", response);
+        return response;
+      }
+
+      // Try to generate proof automatically if identity exists
+      const identity = getSemaphoreIdentityFromStorage();
+      if (!identity) {
+        console.log("⚠️ No Semaphore identity found. Creating non-anonymous post. To enable anonymous posts, make sure you're logged in and have joined the Semaphore group.");
+      }
+      
+      if (identity && publicClient) {
+        try {
+          console.log("🔐 Generating Semaphore proof for anonymous post...");
+
+          // Fetch group data from Semaphore contract via relayer
+          const groupData = await fetchGroupData(groupId);
+          console.log("📊 Group data fetched (raw):", JSON.stringify(groupData, null, 2));
+          console.log("📊 Group data members type:", typeof groupData.members);
+          console.log("📊 Group data members isArray:", Array.isArray(groupData.members));
+          console.log("📊 Group data summary:", {
+            depth: groupData.depth,
+            size: groupData.size,
+            membersCount: groupData.members?.length || 0
+          });
+          
+          // Generate proof using content as signal
+          const proofData = await generateSemaphoreProof(identity, groupId, content, groupData);
+          console.log("✅ Proof generated successfully");
+          
+          console.log("📤 Sending anonymous post via relayer...");
+          const response = await sendFeedbackViaRelayer({
+            content,
+            groupId,
+            feedback: proofData.feedback,
+            merkleTreeDepth: proofData.merkleTreeDepth,
+            merkleTreeRoot: proofData.merkleTreeRoot,
+            nullifier: proofData.nullifier,
+            points: proofData.points,
+          });
+          
+          console.log("✅ Anonymous post created successfully:", response);
+          return response;
+        } catch (proofError) {
+          console.error("❌ Failed to generate Semaphore proof:", proofError);
+          console.warn("⚠️ Falling back to non-anonymous post");
+          // Fall through to non-anonymous post
+        }
+      }
+
+      // Fallback to non-anonymous post via direct contract call
+      console.log("Using non-anonymous post via direct contract call");
+      await writeContract({
+        address: CONTRACT_CONFIG.address,
+        abi: CONTRACT_CONFIG.abi,
+        functionName: "createMainPost",
+        args: [groupId, content],
+      });
+      console.log("Main post created successfully");
+      return true;
+    } catch (error) {
+      console.error("Error creating main post:", error);
+      throw error;
+    }
+  };
+
+  // Get all posts by an author
   const getPostsByAuthor = (authorAddress) => {
     const {
       data: postIds,
@@ -255,15 +347,15 @@ export function useContract() {
       abi: CONTRACT_CONFIG.abi,
       functionName: "getPostsByAuthor",
       args: [authorAddress],
-      // Solo ejecutar la consulta si se proporciona una dirección de autor
+      // Only execute query if author address is provided
       query: {
         enabled: !!authorAddress,
-        staleTime: 15000, // 15 segundos
+        staleTime: 15000, // 15 seconds
       },
     });
 
     return {
-      postIds: postIds || [], // Devuelve un array vacío si es undefined
+      postIds: postIds || [], // Returns empty array if undefined
       isLoading: isLoadingPostIds,
       error,
       refetchPostIds: refetch,
@@ -278,6 +370,7 @@ export function useContract() {
     vote,
     post,
     addComment,
+    createMainPost,
     estimateVoteGas,
     userAddress,
     isTransactionPending: isPending,

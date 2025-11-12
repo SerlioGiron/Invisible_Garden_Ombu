@@ -43,17 +43,17 @@ function PostCard({ post, reply = false }) {
   const [isValidatingAI, setIsValidatingAI] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
 
-  // Obtener votos del blockchain
+  // Get votes from blockchain
   const { upvotes, downvotes, userVote } = usePostVotes(post.id);
 
-  // Obtener comentarios del blockchain
+  // Get comments from blockchain
   const {
     count: commentsCount,
     comments,
     refetch: refetchComments,
   } = usePostComments(post.id);
 
-  // Determinar si el post es trending basado en upvotes
+  // Determine if post is trending based on upvotes
   const isTrending = upvotes >= 50;
 
   const handleReplySubmit = async () => {
@@ -61,32 +61,32 @@ function PostCard({ post, reply = false }) {
 
     setIsSubmittingReply(true);
     setIsValidatingAI(true);
-    setAiSuggestion(null); // Limpiar sugerencias previas
+    setAiSuggestion(null); // Clear previous suggestions
 
     try {
-      // Validar comentario con IA
-      console.log("Validando comentario con IA:", replyContent);
+      // Validate comment with AI
+      console.log("Validating comment with AI:", replyContent);
       const validationResponse = await validarPostAI(replyContent);
       
       setIsValidatingAI(false);
 
-      // Verificar si hay sugerencia de AI
+      // Check if there's an AI suggestion
       const data = validationResponse.data;
       if (data && data.comentario_formalizado) {
-        // El comentario no es válido, mostrar sugerencia
+        // The comment is not valid, show suggestion
         setAiSuggestion(data.comentario_formalizado);
         setIsSubmittingReply(false);
         return;
       }
 
-      // Si llegamos aquí, el comentario es válido (comentario_formalizado es null)
-      console.log("Comentario validado por IA, procediendo a enviar...");
+      // If we get here, the comment is valid (comentario_formalizado is null)
+      console.log("Comment validated by AI, proceeding to send...");
       
       await addComment(post.id, replyContent);
       setReplyContent("");
       setIsReplying(false);
       setAiSuggestion(null);
-      refetchComments(); // Refrescar comentarios después de añadir uno nuevo
+      refetchComments(); // Refresh comments after adding a new one
     } catch (error) {
       console.error("Error submitting comment:", error);
       setIsValidatingAI(false);
@@ -121,10 +121,10 @@ function PostCard({ post, reply = false }) {
     const now = Math.floor(Date.now() / 1000);
     const diff = now - parseInt(timestamp.toString());
 
-    if (diff < 60) return "hace unos segundos";
-    if (diff < 3600) return `hace ${Math.floor(diff / 60)} minutos`;
-    if (diff < 86400) return `hace ${Math.floor(diff / 3600)} horas`;
-    return `hace ${Math.floor(diff / 86400)} días`;
+    if (diff < 60) return "a few seconds ago";
+    if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    return `${Math.floor(diff / 86400)} days ago`;
   };
 
   const getCategoryBadge = () => {
@@ -141,7 +141,7 @@ function PostCard({ post, reply = false }) {
   return (
     <Paper withBorder p="lg" radius="md" style={{ marginBottom: "1rem" }}>
       <Stack gap="sm">
-        {/* Header del post */}
+        {/* Post header */}
         <Group justify="space-between" align="flex-start">
           <Group>
             <Avatar color="blue" radius="xl" size="sm">
@@ -175,7 +175,7 @@ function PostCard({ post, reply = false }) {
           {getCategoryBadge()}
         </Group>
 
-        {/* Contenido del post */}
+        {/* Post content */}
         <div>
           <Title
             order={4}
@@ -206,13 +206,13 @@ function PostCard({ post, reply = false }) {
           )}
         </div>
 
-        {/* Acciones del post */}
+        {/* Post actions */}
         <Group gap="md" mt="sm">
           {!reply && (
             <Group gap="xs">
             <Tooltip
               label={
-                userAddress ? "Votar positivo" : "Conecta tu wallet para votar"
+                userAddress ? "Vote up" : "Connect your wallet to vote"
               }
             >
               <ActionIcon
@@ -232,7 +232,7 @@ function PostCard({ post, reply = false }) {
 
             <Tooltip
               label={
-                userAddress ? "Votar negativo" : "Conecta tu wallet para votar"
+                userAddress ? "Vote down" : "Connect your wallet to vote"
               }
             >
               <ActionIcon
@@ -271,7 +271,7 @@ function PostCard({ post, reply = false }) {
               onClick={commentsCount > 0 ? toggleComments : undefined}
               style={{ cursor: commentsCount > 0 ? "pointer" : "default" }}
             >
-              {commentsCount} comentarios
+              {commentsCount} comments
             </Button>
             )}
 
@@ -283,7 +283,7 @@ function PostCard({ post, reply = false }) {
                 color="light-blue"
                 onClick={() => setIsReplying(!isReplying)}
               >
-                Responder
+                Reply
               </Button>
             )}
           </Group>
@@ -292,7 +292,7 @@ function PostCard({ post, reply = false }) {
         <Collapse in={isReplying}>
           <Stack gap="xs" mt="sm">
             <Textarea
-              placeholder="Escribe tu comentario..."
+              placeholder="Write your comment..."
               value={replyContent}
               onChange={(event) => setReplyContent(event.currentTarget.value)}
               minRows={2}
@@ -300,11 +300,11 @@ function PostCard({ post, reply = false }) {
               disabled={!userAddress || isSubmittingReply}
             />
             
-            {/* Sugerencia de IA */}
+            {/* AI suggestion */}
             {aiSuggestion && (
               <Alert
                 icon={<IconInfoCircle size={16} />}
-                title="Sugerencia de mejora"
+                title="Improvement Suggestion"
                 color="light-blue"
                 variant="light"
                 radius="lg"
@@ -312,8 +312,8 @@ function PostCard({ post, reply = false }) {
               >
                 <Stack style={{ paddingRight: "2.5rem" }}>
                   <Text size="sm" align="left">
-                    La IA ha detectado que tu comentario podría mejorarse.
-                    Aquí tienes una versión reformulada:
+                    AI has detected that your comment could be improved.
+                    Here's a reformulated version:
                   </Text>
                   <Paper p="sm" bg="gray.0" radius="sm">
                     <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
@@ -327,7 +327,7 @@ function PostCard({ post, reply = false }) {
                       onClick={acceptAiSuggestion}
                       radius="md"
                     >
-                      Aplicar sugerencia
+                      Apply suggestion
                     </Button>
                   </Group>
                 </Stack>
@@ -345,7 +345,7 @@ function PostCard({ post, reply = false }) {
                 }}
                 disabled={isSubmittingReply}
               >
-                Cancelar
+                Cancel
               </Button>
               <Button
                 size="xs"
@@ -354,29 +354,29 @@ function PostCard({ post, reply = false }) {
                 loading={isSubmittingReply || isValidatingAI}
                 disabled={!replyContent.trim() || !userAddress}
               >
-                {isValidatingAI ? "Validando..." : "Enviar"}
+                {isValidatingAI ? "Validating..." : "Send"}
               </Button>
             </Group>
           </Stack>
         </Collapse>
 
-        {/* Sección de comentarios */}
+        {/* Comments section */}
         <Collapse in={showComments && commentsCount > 0}>
           <Divider my="sm" />
           <Stack gap="sm">
             <Text size="sm" fw={500} c="dimmed">
-              Comentarios ({commentsCount})
+              Comments ({commentsCount})
             </Text>
 
             {comments && comments.length > 0 ? (
               comments.map((comment, index) => (
-                comment.authorAddress = "Usuario Anónimo",
-                comment.authorName = "Usuario Anónimo",
+                comment.authorAddress = "Anonymous User",
+                comment.authorName = "Anonymous User",
                 <PostCard key={index} post={comment} reply />
               ))
             ) : commentsCount > 0 ? (
               <Text size="sm" c="dimmed" ta="center" py="md">
-                Los comentarios se están cargando desde el blockchain...
+                Comments are loading from the blockchain...
               </Text>
             ) : null}
           </Stack>
