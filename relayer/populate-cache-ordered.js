@@ -4,7 +4,7 @@ import {groupMembersCache} from "./routes/join.js";
 
 const RPC_URL = process.env.RPC_URL;
 const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
-const GROUP_ID = 4;
+const GROUP_ID = 5;
 
 async function populateCacheInOrder() {
     console.log("🔄 Populating cache with members in correct order...\n");
@@ -21,7 +21,7 @@ async function populateCacheInOrder() {
         address: SEMAPHORE_ADDRESS,
         topics: [
             eventTopic,
-            "0x0000000000000000000000000000000000000000000000000000000000000004"
+            "0x0000000000000000000000000000000000000000000000000000000000000005"
         ],
         fromBlock,
         toBlock: currentBlock
@@ -56,7 +56,7 @@ async function populateCacheInOrder() {
     console.log("\n🔄 Clearing existing cache...");
     groupMembersCache.delete(GROUP_ID);
     groupMembersCache.delete(GROUP_ID.toString());
-    groupMembersCache.delete("4");
+    groupMembersCache.delete("5");
 
     console.log("✅ Cache cleared");
 
@@ -64,12 +64,12 @@ async function populateCacheInOrder() {
 
     // Create array instead of Set to maintain order
     const orderedMembers = membersWithIndex.map(m => m.identityCommitment);
-    groupMembersCache.set("4", orderedMembers);
+    groupMembersCache.set("5", orderedMembers);
 
     console.log(`✅ Cache populated with ${orderedMembers.length} members in correct order`);
 
     console.log("\n✅ Done! Cache is now properly ordered.");
-    console.log("\nYou can verify by visiting: http://localhost:3001/api/members/4");
+    console.log("\nYou can verify by visiting: http://localhost:3001/api/members/5");
 }
 
 populateCacheInOrder().catch(error => {

@@ -15,7 +15,7 @@ contract TransferGroupAdminScript is Script {
     function run() external {
         address semaphore = 0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D; // Arbitrum Sepolia
         address ombuContract = 0x3F70431e4ccc1DD4e6d0f8394a4ecc2e67767358; // Your deployed Ombu
-        uint256 groupId = 4;
+        uint256 groupId = 5;
 
         vm.startBroadcast();
 

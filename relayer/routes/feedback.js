@@ -25,6 +25,12 @@ router.post('/', async (req, res) => {
     console.log('   Group ID:', groupId);
     console.log('   Content:', content);
     console.log('   Contract:', process.env.CONTRACT_ADDRESS);
+    console.log('   Merkle Tree Depth:', merkleTreeDepth);
+    console.log('   Merkle Tree Root:', merkleTreeRoot);
+    console.log('   Nullifier:', nullifier);
+    console.log('   Feedback:', feedback);
+    console.log('   Points array length:', points?.length);
+    console.log('   Points:', points);
 
     // Verify signer balance
     const balance = await provider.getBalance(signer.address);
@@ -37,9 +43,19 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Validate points array (must be exactly 8 uint256 values)
+    if (!Array.isArray(points) || points.length !== 8) {
+      return res.status(400).json({
+        error: 'Invalid points array',
+        details: `Points must be an array of exactly 8 uint256 values, got ${points?.length || 0}`
+      });
+    }
+
     // Execute transaction
     // Note: feedback must be the exact uint256 value used when generating the Semaphore proof on the client side
-    const transaction = await contract.sendFeedback(
+    // Using createMainPost which matches the ABI (sendFeedback in source is compiled as createMainPost)
+    console.log('   Calling contract.createMainPost...');
+    const transaction = await contract.createMainPost(
       groupId,
       merkleTreeDepth,
       merkleTreeRoot,
@@ -62,6 +78,26 @@ router.post('/', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('❌ Error in feedback route:', error);
+    console.error('   Error message:', error.message);
+    console.error('   Error code:', error.code);
+    console.error('   Error data:', error.data);
+    
+    // Try to decode the error
+    if (error.data) {
+      console.error('   Error data (hex):', error.data);
+      // Common Semaphore errors:
+      // 0x4aa6bc40 might be related to proof validation failure
+      if (error.data === '0x4aa6bc40' || error.data.startsWith('0x4aa6bc40')) {
+        return res.status(500).json({
+          error: 'Proof validation failed',
+          details: 'The Semaphore proof validation failed. This usually means: 1) The proof was generated with a different merkle tree root than what exists on-chain, 2) The group ID is incorrect, 3) The proof parameters are invalid, or 4) The identity commitment is not a member of the group.',
+          errorData: error.data,
+          suggestion: 'Verify that the local group members match the on-chain group members exactly, and that the proof was generated with the correct group data.'
+        });
+      }
+    }
+    
     return handleError(error, res);
   }
 });

@@ -8,7 +8,7 @@ const router = express.Router();
  * This is useful for populating cache with existing members who joined before cache was implemented
  *
  * POST /api/admin/add-member
- * Body: { groupId: "4", identityCommitment: "12172...126" }
+ * Body: { groupId: "5", identityCommitment: "12172...126" }
  */
 router.post("/add-member", (req, res) => {
     try {
@@ -52,7 +52,7 @@ router.post("/add-member", (req, res) => {
 /**
  * Admin endpoint to set the entire cache with ordered members
  * POST /api/admin/set-members
- * Body: { groupId: "4", members: ["commitment1", "commitment2", ...] }
+ * Body: { groupId: "5", members: ["commitment1", "commitment2", ...] }
  */
 router.post("/set-members", (req, res) => {
     try {

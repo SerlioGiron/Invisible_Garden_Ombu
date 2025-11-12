@@ -1,6 +1,12 @@
 import express from "express";
 import {Contract, JsonRpcProvider} from "ethers";
 import {groupMembersCache} from "./join.js";
+import {readFileSync} from "fs";
+import {fileURLToPath} from "url";
+import {dirname, join} from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const router = express.Router();
 
@@ -22,13 +28,30 @@ router.get("/:groupId", async (req, res) => {
         // other means (direct contract calls, other relayers) won't appear in the cache.
         // For production, consider using a persistent database or The Graph hosted service.
 
-        const cached = groupMembersCache.get(groupId);
-        // Handle both Set (old format) and Array (new ordered format)
-        const members = cached
-            ? (Array.isArray(cached) ? cached : Array.from(cached))
-            : [];
+        let members = [];
 
-        console.log(`   Found ${members.length} members in cache`);
+        // First, try to load from set-ordered-members.json file (source of truth)
+        try {
+            const jsonPath = join(__dirname, "../../set-ordered-members.json");
+            const jsonData = JSON.parse(readFileSync(jsonPath, "utf8"));
+            if (jsonData.groupId === groupId || jsonData.groupId === groupId.toString()) {
+                members = jsonData.members || [];
+                console.log(`   Found ${members.length} members in set-ordered-members.json`);
+            }
+        } catch (jsonError) {
+            // File doesn't exist or doesn't match groupId - that's okay, fall back to cache
+            console.log(`   No set-ordered-members.json found or doesn't match groupId, using cache`);
+        }
+
+        // If no members from JSON file, fall back to cache
+        if (members.length === 0) {
+            const cached = groupMembersCache.get(groupId);
+            // Handle both Set (old format) and Array (new ordered format)
+            members = cached
+                ? (Array.isArray(cached) ? cached : Array.from(cached))
+                : [];
+            console.log(`   Found ${members.length} members in cache`);
+        }
 
         // Get group metadata from RPC (only metadata, not members - much faster)
         const provider = new JsonRpcProvider(process.env.RPC_URL);

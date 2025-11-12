@@ -3,7 +3,7 @@ import "dotenv/config";
 
 const RPC_URL = process.env.RPC_URL;
 const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
-const GROUP_ID = 4;
+const GROUP_ID = 5;
 
 async function findMembers() {
     console.log("🔍 Finding all members for group", GROUP_ID);
@@ -28,8 +28,8 @@ async function findMembers() {
             address: SEMAPHORE_ADDRESS,
             topics: [
                 eventTopic,
-                // Group ID = 4 (padded to 32 bytes)
-                "0x0000000000000000000000000000000000000000000000000000000000000004"
+                // Group ID = 5 (padded to 32 bytes)
+                "0x0000000000000000000000000000000000000000000000000000000000000005"
             ],
             fromBlock,
             toBlock: currentBlock
@@ -89,7 +89,7 @@ async function findMembers() {
                 address: SEMAPHORE_ADDRESS,
                 topics: [
                     eventTopic,
-                    "0x0000000000000000000000000000000000000000000000000000000000000004"
+                    "0x0000000000000000000000000000000000000000000000000000000000000005"
                 ],
                 fromBlock: smallFromBlock,
                 toBlock: currentBlock
