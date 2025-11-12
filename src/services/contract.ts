@@ -215,4 +215,4 @@ export const categories = [
     {value: "vida-universitaria", label: "Vida Universitaria", color: "violet"},
 ];
 
-export const DEFAULT_GROUP_ID = 0;
+export const DEFAULT_GROUP_ID = 5;

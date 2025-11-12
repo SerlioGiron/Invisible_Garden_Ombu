@@ -3,7 +3,7 @@ import "dotenv/config";
 
 const RPC_URL = process.env.RPC_URL;
 const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
-const groupId = "0"; // Test with group ID 0
+const groupId = "5"; // Test with group ID 5
 
 async function testSemaphoreEthers() {
     console.log("🔵 Testing SemaphoreEthers...");

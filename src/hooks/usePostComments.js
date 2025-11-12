@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useReadContract, usePublicClient } from 'wagmi';
 import { CONTRACT_CONFIG } from '../services/contract';
 
-const DEFAULT_GROUP_ID = 0;
+const DEFAULT_GROUP_ID = 5;
 
 /**
  * Hook para obtener todos los posts de un grupo específico
