@@ -198,12 +198,18 @@ router.post("/", async (req, res) => {
         try {
             const transaction = await contract.addMember(selectedGroupId, identityCommitment);
             console.log("✅ Transaction sent successfully");
-            console.log("   Transaction:", transaction);
+            console.log("   Transaction hash:", transaction.hash);
             console.log("   Waiting for confirmation...");
 
-            // Parse the hexadecimal data from logs
-            if (transaction.logs.length > 0 && transaction.logs[0].data) {
-                const hexData = transaction.logs[0].data;
+            const receipt = await transaction.wait();
+            console.log("✅ Transaction confirmed!");
+            console.log("   Block number:", receipt.blockNumber);
+            console.log("   Gas used:", receipt.gasUsed.toString());
+            console.log("   Status:", receipt.status === 1 ? "Success" : "Failed");
+
+            // Parse the hexadecimal data from logs (now available in receipt)
+            if (receipt.logs.length > 0 && receipt.logs[0].data) {
+                const hexData = receipt.logs[0].data;
                 console.log("🔵 Parsing hex data:", hexData);
                 
                 // Remove '0x' prefix
@@ -230,12 +236,6 @@ router.post("/", async (req, res) => {
                 console.log("   Part 2 (decimal):", decimal2);
                 console.log("   Part 3 (decimal):", decimal3);
             }
-
-            const receipt = await transaction.wait();
-            console.log("✅ Transaction confirmed!");
-            console.log("   Block number:", receipt.blockNumber);
-            console.log("   Gas used:", receipt.gasUsed.toString());
-            console.log("   Status:", receipt.status === 1 ? "Success" : "Failed");
 
             // Add to cache for instant retrieval without event scanning
             if (!groupMembersCache.has(selectedGroupId)) {
