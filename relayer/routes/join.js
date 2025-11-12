@@ -3,6 +3,7 @@ import {Contract, JsonRpcProvider, Wallet} from "ethers";
 import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
+import {MongoClient, ServerApiVersion} from "mongodb";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,7 +27,7 @@ try {
 router.post("/", async (req, res) => {
     console.log("🔵 ========== JOIN ROUTE CALLED ==========");
     console.log("🔵 Request body:", JSON.stringify(req.body, null, 2));
-    
+
     try {
         const {identityCommitment, groupId} = req.body;
 
@@ -56,12 +57,12 @@ router.post("/", async (req, res) => {
         console.log("   RPC_URL:", process.env.RPC_URL ? "Set" : "NOT SET");
         console.log("   PRIVATE_KEY:", process.env.PRIVATE_KEY ? "Set" : "NOT SET");
         console.log("   CONTRACT_ADDRESS:", process.env.CONTRACT_ADDRESS || "NOT SET");
-        
+
         const provider = new JsonRpcProvider(process.env.RPC_URL);
         const signer = new Wallet(process.env.PRIVATE_KEY, provider);
         console.log("✅ Provider and signer configured");
         console.log("   Signer address:", signer.address);
-        
+
         const contract = new Contract(process.env.CONTRACT_ADDRESS, OmbuArtifact.abi, signer);
         console.log("✅ Contract instance created");
         console.log("   Contract address:", process.env.CONTRACT_ADDRESS);
@@ -74,7 +75,7 @@ router.post("/", async (req, res) => {
             const groupCounter = await contract.groupCounter();
             const groupCounterNum = Number(groupCounter);
             console.log("✅ Group counter:", groupCounterNum);
-            
+
             if (groupCounterNum === 0) {
                 console.error("❌ No groups exist in contract");
                 return res.status(400).json({
@@ -130,15 +131,15 @@ router.post("/", async (req, res) => {
             const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
             const semaphoreGroupsABI = [
                 {
-                    inputs: [{ name: "groupId", type: "uint256" }],
+                    inputs: [{name: "groupId", type: "uint256"}],
                     name: "getMerkleTreeRoot",
-                    outputs: [{ name: "", type: "uint256" }],
+                    outputs: [{name: "", type: "uint256"}],
                     stateMutability: "view",
                     type: "function",
                 },
             ];
             const semaphoreContract = new Contract(SEMAPHORE_ADDRESS, semaphoreGroupsABI, provider);
-            
+
             console.log("   Checking if group", selectedGroupId, "exists in Semaphore...");
             const merkleRoot = await semaphoreContract.getMerkleTreeRoot(selectedGroupId);
             console.log("✅ Group exists in Semaphore!");
@@ -148,7 +149,7 @@ router.post("/", async (req, res) => {
             console.error("   Error:", semaphoreCheckError.message);
             console.error("   Group ID from Ombu contract:", selectedGroupId);
             console.error("   This means the Ombu contract's stored group ID doesn't match Semaphore");
-            
+
             return res.status(500).json({
                 error: "Group does not exist in Semaphore",
                 details: `The group ID ${selectedGroupId} stored in the Ombu contract does not exist in Semaphore. This usually means the contract wasn't properly initialized or the group was deleted. Please verify the contract deployment and group creation.`,
@@ -156,7 +157,7 @@ router.post("/", async (req, res) => {
                 contractAddress: process.env.CONTRACT_ADDRESS,
             });
         }
-        
+
         // const receipt = await provider.getTransactionReceipt("0x2d80556ba0049ab8354160a763ec802c5251f2f3b19de195cfe25bab367e51a7");
         // console.log("receipt: ", receipt.logs);
 
@@ -166,7 +167,7 @@ router.post("/", async (req, res) => {
             console.log("   Calling contract.isGroupMember(", selectedGroupId, ",", identityCommitment, ")...");
             const isMember = await contract.isGroupMember(selectedGroupId, identityCommitment);
             console.log("✅ Is already member:", isMember);
-            
+
             if (isMember) {
                 console.log("✅ User is already a member, returning success");
 
@@ -194,7 +195,7 @@ router.post("/", async (req, res) => {
         // Execute transaction
         console.log("🔵 Executing transaction to add member...");
         console.log("   Calling contract.addMember(", selectedGroupId, ",", identityCommitment, ")...");
-        
+
         try {
             const transaction = await contract.addMember(selectedGroupId, identityCommitment);
             console.log("✅ Transaction sent successfully");
@@ -211,30 +212,81 @@ router.post("/", async (req, res) => {
             if (receipt.logs.length > 0 && receipt.logs[0].data) {
                 const hexData = receipt.logs[0].data;
                 console.log("🔵 Parsing hex data:", hexData);
-                
+
                 // Remove '0x' prefix
                 const cleanHex = hexData.slice(2);
                 console.log("   Clean hex (without 0x):", cleanHex);
                 console.log("   Total length:", cleanHex.length, "characters");
-                
+
                 // Split into three 64-character strings (32 bytes each)
                 const part1 = cleanHex.slice(0, 64);
                 const part2 = cleanHex.slice(64, 128);
                 const part3 = cleanHex.slice(128, 192);
-                
+
                 console.log("   Part 1 (hex):", part1);
                 console.log("   Part 2 (hex):", part2);
                 console.log("   Part 3 (hex):", part3);
-                
+
                 // Convert to decimal
-                const decimal1 = BigInt('0x' + part1).toString();
-                const decimal2 = BigInt('0x' + part2).toString();
-                const decimal3 = BigInt('0x' + part3).toString();
-                
+                const decimal1 = BigInt("0x" + part1).toString();
+                const decimal2 = BigInt("0x" + part2).toString();
+                const decimal3 = BigInt("0x" + part3).toString();
+
                 console.log("✅ Decoded values:");
                 console.log("   Part 1 (decimal):", decimal1);
                 console.log("   Part 2 (decimal):", decimal2);
                 console.log("   Part 3 (decimal):", decimal3);
+
+                // Store in MongoDB
+                let mongoClient;
+                try {
+                    console.log("🔵 Connecting to MongoDB...");
+                    console.log("   MONGODB_URI:", process.env.MONGODB_URI ? "Set" : "NOT SET");
+                    
+                    mongoClient = new MongoClient(process.env.MONGODB_URI, {
+                        serverApi: {
+                            version: ServerApiVersion.v1,
+                            strict: true,
+                            deprecationErrors: true,
+                        }
+                    });
+                    
+                    await mongoClient.connect();
+                    await mongoClient.db("admin").command({ ping: 1 });
+                    console.log("✅ Connected to MongoDB");
+
+                    const database = mongoClient.db("OMBU");
+                    const collection = database.collection("Commitments");
+
+                    const document = {
+                        groupId: selectedGroupId,
+                        identityCommitment: identityCommitment,
+                        transactionHash: receipt.hash,
+                        blockNumber: receipt.blockNumber,
+                        merkleTreeData: {
+                            value1: decimal1,
+                            value2: decimal2,
+                            value3: decimal3
+                        },
+                        hexData: hexData,
+                        timestamp: new Date(),
+                    };
+
+                    console.log("🔵 Inserting document into MongoDB...");
+                    const result = await collection.insertOne(document);
+                    console.log("✅ Document inserted with _id:", result.insertedId);
+
+                } catch (mongoError) {
+                    console.error("❌ MongoDB error:");
+                    console.error("   Error message:", mongoError.message);
+                    console.error("   Error stack:", mongoError.stack);
+                    // Don't fail the entire request if MongoDB fails
+                } finally {
+                    if (mongoClient) {
+                        await mongoClient.close();
+                        console.log("✅ MongoDB connection closed");
+                    }
+                }
             }
 
             // Add to cache for instant retrieval without event scanning
@@ -258,7 +310,7 @@ router.post("/", async (req, res) => {
             console.error("   Error code:", txError.code);
             console.error("   Error data:", txError.data);
             console.error("   Error info:", JSON.stringify(txError.info, null, 2));
-            
+
             // Re-throw to be handled by outer catch
             throw txError;
         }
@@ -281,9 +333,9 @@ router.post("/", async (req, res) => {
         } else if (error.code === "CALL_EXCEPTION" || error.code === "ACTION_REJECTED") {
             // Decode custom error
             const errorData = error.data || error.info?.error?.data || error.reason;
-            
+
             console.error("   Error data (hex):", errorData);
-            
+
             // Error selector 0xbb9bf278 = Semaphore__GroupDoesNotExist()
             if (errorData === "0xbb9bf278" || error.message?.includes("Group does not exist") || error.reason?.includes("Group does not exist")) {
                 errorMessage = "Group does not exist in Semaphore";
