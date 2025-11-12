@@ -193,8 +193,8 @@ export async function fetchGroupData(groupId) {
 
     const data = await response.json();
 
-    // Use members directly from relayer (which uses set-ordered-members.json as source of truth)
-    // Don't auto-add user's commitment - the relayer should have the correct members list
+    // Use members directly from relayer (which uses MongoDB database as source of truth)
+    // Members are stored in chronological order in the database
     const members = data.members || [];
 
     // Log if user's commitment is missing (for debugging, but don't add it)

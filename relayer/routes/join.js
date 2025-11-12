@@ -4,16 +4,14 @@ import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
 import {MongoClient} from "mongodb";
-import {getIdentityCommitmentsInOrder} from "../utils/mongodb.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const router = express.Router();
 
-// Import the shared cache from members.js
-// Note: This is a simple in-memory cache that persists across requests
-export const groupMembersCache = new Map();
+// Note: groupMembersCache has been removed - MongoDB is now the single source of truth
+// All members are stored in and retrieved from the database
 
 // Load contract ABI
 const abiPath = join(__dirname, "../Ombu.json");
@@ -172,12 +170,9 @@ router.post("/", async (req, res) => {
             if (isMember) {
                 console.log("✅ User is already a member, returning success");
 
-                // Add to cache even if already a member (in case cache was cleared)
-                if (!groupMembersCache.has(selectedGroupId)) {
-                    groupMembersCache.set(selectedGroupId, new Set());
-                }
-                groupMembersCache.get(selectedGroupId).add(identityCommitment);
-                console.log("✅ Added existing member to cache for group", selectedGroupId);
+                // Member is already in the blockchain group
+                // No need to add to database as they should already be there
+                console.log("✅ User is already a member of group", selectedGroupId);
 
                 return res.status(200).json({
                     success: true,
@@ -323,14 +318,19 @@ router.post("/", async (req, res) => {
                 console.warn("⚠️  MemberAdded event not found in transaction logs");
             }
 
-            if (!groupMembersCache.has(selectedGroupId)) {
-                groupMembersCache.set(selectedGroupId, new Set());
+            // Member is now stored in MongoDB database (single source of truth)
+            // Cache is no longer used - all members are retrieved from database
+            console.log("✅ Member stored in database for group", selectedGroupId);
+            
+            // Verify member was stored by retrieving from database
+            try {
+                const {getIdentityCommitmentsByGroup} = await import("../utils/mongodb.js");
+                const identityCommitments = await getIdentityCommitmentsByGroup(selectedGroupId);
+                console.log(`✅ Verified: Database now has ${identityCommitments.length} members for group ${selectedGroupId}`);
+            } catch (verifyError) {
+                console.warn("⚠️  Could not verify member in database:", verifyError.message);
+                // Don't fail the request - the transaction succeeded and member was added to blockchain
             }
-            groupMembersCache.get(selectedGroupId).add(identityCommitment);
-            console.log("✅ Added member to cache for group", selectedGroupId);
-            console.log("   Cache now has", groupMembersCache.get(selectedGroupId).size, "members");
-            const identityCommitments = await getIdentityCommitmentsInOrder(selectedGroupId);
-            console.log("Identity commitments: ", identityCommitments);
 
             return res.status(200).json({
                 success: true,

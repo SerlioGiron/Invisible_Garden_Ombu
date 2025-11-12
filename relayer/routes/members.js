@@ -1,13 +1,6 @@
 import express from "express";
 import {Contract, JsonRpcProvider} from "ethers";
-import {groupMembersCache} from "./join.js";
-import {readFileSync} from "fs";
-import {fileURLToPath} from "url";
-import {dirname, join} from "path";
-import {getIdentityCommitmentsInOrder} from "../utils/mongodb.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import {getIdentityCommitmentsByGroup} from "../utils/mongodb.js";
 
 const router = express.Router();
 
@@ -17,41 +10,21 @@ const SEMAPHORE_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
 router.get("/:groupId", async (req, res) => {
     try {
         const {groupId} = req.params;
+        const groupIdNum = parseInt(groupId);
 
-        console.log(`🔵 Fetching members for group ${groupId}...`);
+        console.log(`🔵 Fetching members for group ${groupId} from database...`);
 
-        // IMPORTANT: We use an in-memory cache for members because:
-        // 1. Event scanning (SemaphoreEthers/Subgraph) hits RPC rate limits on free tier
-        // 2. Querying from block 0 times out on large chains
-        // 3. The cache is populated when users join via our relayer (/api/join endpoint)
-        //
-        // Limitation: Members who joined BEFORE this relayer was deployed or through
-        // other means (direct contract calls, other relayers) won't appear in the cache.
-        // For production, consider using a persistent database or The Graph hosted service.
-
+        // Use MongoDB as the single source of truth for members
+        // Members are stored in chronological order when they join via /api/join
         let members = [];
-
-        // First, try to load from set-ordered-members.json file (source of truth)
         try {
-            const jsonPath = join(__dirname, "../../set-ordered-members.json");
-            const jsonData = JSON.parse(readFileSync(jsonPath, "utf8"));
-            if (jsonData.groupId === groupId || jsonData.groupId === groupId.toString()) {
-                members =  await getIdentityCommitmentsInOrder() || [];
-                console.log(`   Found ${members.length} members in set-ordered-members.json`);
-            }
-        } catch (jsonError) {
-            // File doesn't exist or doesn't match groupId - that's okay, fall back to cache
-            console.log(`   No set-ordered-members.json found or doesn't match groupId, using cache`);
-        }
-
-        // If no members from JSON file, fall back to cache
-        if (members.length === 0) {
-            const cached = groupMembersCache.get(groupId);
-            // Handle both Set (old format) and Array (new ordered format)
-            members = cached
-                ? (Array.isArray(cached) ? cached : Array.from(cached))
-                : [];
-            console.log(`   Found ${members.length} members in cache`);
+            members = await getIdentityCommitmentsByGroup(groupIdNum);
+            console.log(`✅ Retrieved ${members.length} members from database for group ${groupId}`);
+        } catch (dbError) {
+            console.error("❌ Error fetching members from database:", dbError.message);
+            // If database fails, return empty array - don't fail the entire request
+            // Group metadata (root, depth, size) will still be returned from blockchain
+            members = [];
         }
 
         // Get group metadata from RPC (only metadata, not members - much faster)
