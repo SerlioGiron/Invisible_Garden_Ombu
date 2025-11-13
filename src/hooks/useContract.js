@@ -12,9 +12,10 @@ import {
   CONTRACT_CONFIG,
   CATEGORY_MAPPING,
   REVERSE_CATEGORY_MAPPING,
+  DEFAULT_GROUP_ID,
 } from "../services/contract";
 import { getFallbackData } from "../services/fallbackData";
-import { sendFeedbackViaRelayer } from "../services/relayerApi";
+import { sendFeedbackViaRelayer, voteOnPostViaRelayer } from "../services/relayerApi";
 import { 
   getSemaphoreIdentityFromStorage, 
   generateSemaphoreProof, 
@@ -190,6 +191,124 @@ export function useContract() {
       throw error;
     }
   };
+
+  const getStoredIdentityCommitment = () => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    const storedCommitment = window.localStorage?.getItem("ombuSemaphoreCommitment");
+    if (!storedCommitment) {
+      return null;
+    }
+
+    try {
+      const trimmed = storedCommitment.trim();
+      if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
+        return BigInt(trimmed);
+      }
+      return BigInt(trimmed);
+    } catch (error) {
+      console.warn("Unable to parse stored identity commitment:", error);
+      return null;
+    }
+  };
+
+  const normalizeBigInt = (value, name) => {
+    if (typeof value === "bigint") {
+      return value;
+    }
+    try {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
+          return BigInt(trimmed);
+        }
+        return BigInt(trimmed);
+      }
+      if (typeof value === "number") {
+        return BigInt(value);
+      }
+      throw new Error(`Unsupported type ${typeof value}`);
+    } catch (error) {
+      throw new Error(`Invalid ${name}: ${error.message}`);
+    }
+  };
+
+  const upvotePost = async (postId, options = {}) => {
+    const { groupId = DEFAULT_GROUP_ID, identityCommitment } = options;
+
+    if (postId === undefined || postId === null) {
+      throw new Error("postId is required to upvote");
+    }
+
+    try {
+      const commitment =
+        identityCommitment ??
+        getStoredIdentityCommitment() ??
+        (() => {
+          const identity = getSemaphoreIdentityFromStorage();
+          return identity ? normalizeBigInt(identity.commitment.toString(), "identity commitment") : null;
+        })();
+
+      if (!commitment) {
+        throw new Error("Semaphore identity commitment not found. Please join the group first.");
+      }
+
+      const normalizedGroupId = normalizeBigInt(groupId, "groupId");
+      const normalizedPostId = normalizeBigInt(postId, "postId");
+
+      const result = await voteOnPostViaRelayer({
+        groupId: normalizedGroupId.toString(),
+        postId: normalizedPostId.toString(),
+        identityCommitment: commitment.toString(),
+        isUpvote: false,
+      });
+
+      return result?.transactionHash || null;
+    } catch (error) {
+      console.error("Error downvoting post:", error);
+      throw error;
+    }
+  };
+
+  const downvotePost = async (postId, options = {}) => {
+    const { groupId = DEFAULT_GROUP_ID, identityCommitment } = options;
+
+    if (postId === undefined || postId === null) {
+      throw new Error("postId is required to downvote");
+    }
+
+    try {
+      const commitment =
+        identityCommitment ??
+        getStoredIdentityCommitment() ??
+        (() => {
+          const identity = getSemaphoreIdentityFromStorage();
+          return identity ? normalizeBigInt(identity.commitment.toString(), "identity commitment") : null;
+        })();
+
+      if (!commitment) {
+        throw new Error("Semaphore identity commitment not found. Please join the group first.");
+      }
+
+      const normalizedGroupId = normalizeBigInt(groupId, "groupId");
+      const normalizedPostId = normalizeBigInt(postId, "postId");
+
+      const result = await voteOnPostViaRelayer({
+        groupId: normalizedGroupId.toString(),
+        postId: normalizedPostId.toString(),
+        identityCommitment: commitment.toString(),
+        isDownvote: true,
+      });
+
+      return result?.transactionHash || null;
+    } catch (error) {
+      console.error("Error upvoting post:", error);
+      throw error;
+    }
+  };
+    
 
   // Function to create a post
   const post = async (title, content, category, topics = []) => {
@@ -372,6 +491,8 @@ export function useContract() {
     addComment,
     createMainPost,
     estimateVoteGas,
+    upvotePost,
+    downvotePost,
     userAddress,
     isTransactionPending: isPending,
     transactionHash: hash,
