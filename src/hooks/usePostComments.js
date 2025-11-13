@@ -53,11 +53,14 @@ export function useGroupPosts(groupId = DEFAULT_GROUP_ID) {
 
         const postsData = await Promise.all(postsPromises);
         
-        const formattedPosts = postsData.map((post) => ({
-          content: post[0], // content
-          timestamp: Number(post[1]), // timestamp
-          upvotes: Number(post[2]), // upvotes
-          downvotes: Number(post[3]), // downvotes
+        const formattedPosts = postsData.map((post, index) => ({
+          id: index + 1, // Post IDs start from 1
+          groupId: groupId,
+          title: post[0], // title
+          content: post[1], // content
+          timestamp: Number(post[2]), // timestamp
+          upvotes: Number(post[3]), // upvotes
+          downvotes: Number(post[4]), // downvotes
         }));
 
         setPosts(formattedPosts);
@@ -121,6 +124,9 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
 
         // Format the main post
         const formattedPost = {
+          id: postId,
+          groupId: groupId,
+          title: mainPostData[0],
           content: mainPostData[1],
           timestamp: Number(mainPostData[2]),
           upvotes: Number(mainPostData[3]),
@@ -131,6 +137,7 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
         // Try to get subposts (comments)
         // Since there is no counter, we try until we find an empty post
         const fetchedSubPosts = [];
+        let subPostId = 1; // Start from 1
         let maxAttempts = 100; // Safety limit
 
         while (subPostId <= maxAttempts) {
@@ -142,12 +149,15 @@ export function usePostWithComments(groupId = DEFAULT_GROUP_ID, postId) {
               args: [groupId, postId, subPostId],
             });
 
-            // If the author is address(0), it means it does not exist
-            if (subPostData[0] === '0x0000000000000000000000000000000000000000') {
+            // Check if timestamp is 0, which means the post doesn't exist
+            if (Number(subPostData[2]) === 0) {
               break;
             }
 
             fetchedSubPosts.push({
+              id: subPostId,
+              groupId: groupId,
+              title: subPostData[0],
               content: subPostData[1],
               timestamp: Number(subPostData[2]),
               upvotes: Number(subPostData[3]),

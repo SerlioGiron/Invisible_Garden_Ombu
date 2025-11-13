@@ -63,23 +63,30 @@ function RecentPostCard({ post, authenticated }) {
           </Badge>
         )}
       </Group>
-      <Text size="sm" mb="sm" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+      {post.title && (
+        <Text size="md" fw={600} mb="xs" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+          {post.title}
+        </Text>
+      )}
+      <Text size="sm" mb="sm" c="dimmed" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
         {post.content}
       </Text>
-      <Group gap="xs" align="center">
+      <Group gap="md" align="center">
         <Group gap="xs" align="center">
           <UpVote postId={post.id} groupId={post.groupId} disabled={!authenticated} hasVoted={userVote === 1} onSuccess={() => {
             refetchVotes?.();
             refetchUserVote?.();
           }} />
-          <Text size="xs" fw={600} c="dimmed">
+          <Text size="sm" fw={600}>
             {effectiveUpvotes}
           </Text>
+        </Group>
+        <Group gap="xs" align="center">
           <DownVote postId={post.id} groupId={post.groupId} disabled={!authenticated} hasVoted={userVote === -1} onSuccess={() => {
             refetchVotes?.();
             refetchUserVote?.();
           }} />
-          <Text size="xs" fw={600} c="dimmed">
+          <Text size="sm" fw={600}>
             {effectiveDownvotes}
           </Text>
         </Group>
@@ -129,6 +136,7 @@ function Home() {
           id: postId,
           groupId: post.groupId ?? DEFAULT_GROUP_ID,
           authorAddress: post.author || null,
+          title: post.title || "",
           content: post.content || "",
           timestamp: post.timestamp,
           upvotes: Number(post.upvotes) || 0,
