@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Container,
   Title,
@@ -18,14 +18,76 @@ import {
   IconMessageCircle,
   IconStar,
   IconUser,
-  IconArrowUp,
   IconArrowDown,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import { usePrivy } from "@privy-io/react-auth";
 import { useGroupPosts } from "../hooks/usePostComments";
-import { useMemo } from "react";
 import { DEFAULT_GROUP_ID } from "../services/contract";
+import UpVote from "../components/UpVote";
+import DownVote from "../components/DownVote";
+import { usePostVotes } from "../hooks/usePostVotes";
+
+function RecentPostCard({ post, authenticated }) {
+  const {
+    upvotes,
+    downvotes,
+    userVote,
+    refetchVotes,
+    refetchUserVote,
+  } = usePostVotes(post.id);
+
+  const effectiveUpvotes =
+    typeof upvotes === "number" && !Number.isNaN(upvotes) ? upvotes : post.upvotes || 0;
+  const effectiveDownvotes =
+    typeof downvotes === "number" && !Number.isNaN(downvotes) ? downvotes : post.downvotes || 0;
+
+  return (
+    <Paper key={post.id} p="md" withBorder radius="md">
+      <Group justify="space-between" mb="sm">
+        <Group>
+          <Avatar color="blue" size="sm" radius="xl">
+            {post.authorAddress?.substring(2, 4).toUpperCase() || "AN"}
+          </Avatar>
+          <div>
+            <Text size="sm" fw={500} style={{ fontFamily: "monospace" }}>
+              {post.commitmentId ?? "Anonymous member"}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {post.timeAgo}
+            </Text>
+          </div>
+        </Group>
+        {effectiveUpvotes >= 50 && (
+          <Badge color="orange" variant="light" size="sm">
+            Trending
+          </Badge>
+        )}
+      </Group>
+      <Text size="sm" mb="sm" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+        {post.content}
+      </Text>
+      <Group gap="xs" align="center">
+        <Group gap="xs" align="center">
+          <UpVote postId={post.id} groupId={post.groupId} disabled={!authenticated} hasVoted={userVote === 1} onSuccess={() => {
+            refetchVotes?.();
+            refetchUserVote?.();
+          }} />
+          <Text size="xs" fw={600} c="dimmed">
+            {effectiveUpvotes}
+          </Text>
+          <DownVote postId={post.id} groupId={post.groupId} disabled={!authenticated} hasVoted={userVote === -1} onSuccess={() => {
+            refetchVotes?.();
+            refetchUserVote?.();
+          }} />
+          <Text size="xs" fw={600} c="dimmed">
+            {effectiveDownvotes}
+          </Text>
+        </Group>
+      </Group>
+    </Paper>
+  );
+}
 
 function Home() {
   const navigate = useNavigate();
@@ -58,13 +120,15 @@ function Home() {
     return [...groupPosts]
       .sort((a, b) => b.id - a.id)
       .slice(0, 10)
-      .map((post) => {
+      .map((post, index) => {
+        const postId = post.id ?? index + 1;
         const commitmentId = post.author
           ? getCommitmentIdentifier(post.author)
           : null;
         
         return {
-          id: post.id,
+          id: postId,
+          groupId: post.groupId ?? DEFAULT_GROUP_ID,
           authorAddress: post.author || null,
           content: post.content || "",
           timestamp: post.timestamp,
@@ -163,41 +227,11 @@ function Home() {
           ) : (
             <Stack gap="md">
               {recentPosts.map((post) => (
-                <Paper key={post.id} p="md" withBorder radius="md">
-                  <Group justify="space-between" mb="sm">
-                    <Group>
-                      <Avatar color="blue" size="sm" radius="xl">
-                        {post.authorAddress?.substring(2, 4).toUpperCase()}
-                      </Avatar>
-                      <div>
-                        <Text size="sm" fw={500} style={{ fontFamily: 'monospace' }}>
-                          {post.commitmentId ?? "Anonymous member"}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {post.timeAgo}
-                        </Text>
-                      </div>
-                    </Group>
-                    {post.upvotes >= 50 && (
-                      <Badge color="orange" variant="light" size="sm">
-                        Trending
-                      </Badge>
-                    )}
-                  </Group>
-                  <Text size="sm" mb="sm" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                    {post.content}
-                  </Text>
-                  <Group gap="xs">
-                    <IconArrowUp color="blue" size={14} />
-                    <Text size="xs" c="dimmed">
-                      {post.upvotes}
-                    </Text>
-                    <IconArrowDown color="red" size={14} />
-                    <Text size="xs" c="dimmed">
-                      {post.downvotes}
-                    </Text>
-                  </Group>
-                </Paper>
+                <RecentPostCard
+                  key={post.id}
+                  post={post}
+                  authenticated={authenticated}
+                />
               ))}
             </Stack>
           )}

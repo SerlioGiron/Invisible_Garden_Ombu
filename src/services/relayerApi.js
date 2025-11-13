@@ -96,6 +96,42 @@ export async function sendFeedbackViaRelayer({
   }
 }
 
+export async function voteOnPostViaRelayer({
+  groupId,
+  postId,
+  identityCommitment,
+  isUpvote = true,
+}) {
+  try {
+    console.log("🔄 Calling relayer to submit vote...");
+
+    const response = await fetch(`${RELAYER_URL}/api/vote`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        groupId,
+        postId,
+        identityCommitment,
+        isUpvote,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || error.error || "Failed to submit vote");
+    }
+
+    const result = await response.json();
+    console.log("✅ Vote submitted via relayer:", result);
+    return result;
+  } catch (error) {
+    console.error("❌ Error calling relayer (vote):", error);
+    throw error;
+  }
+}
+
 /**
  * Check if the relayer is online and healthy
  * @returns {Promise<{status: string, message: string}>}

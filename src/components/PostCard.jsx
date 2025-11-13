@@ -7,7 +7,6 @@ import {
   Group,
   Stack,
   Badge,
-  ActionIcon,
   Button,
   Tooltip,
   Collapse,
@@ -17,8 +16,6 @@ import {
   Alert,
 } from "@mantine/core";
 import {
-  IconArrowUp,
-  IconArrowDown,
   IconMessageCircle,
   IconTrendingUp,
   IconChevronDown,
@@ -32,10 +29,11 @@ import { usePostComments } from "../hooks/usePostComments";
 import { categories } from "../services/contract";
 import { validarPostAI } from "../services/apiBackendAI";
 import Comment from "./Comment";
+import UpVote from "./UpVote";
+import DownVote from "./DownVote";
 
 function PostCard({ post, reply = false }) {
-  const { vote, userAddress, addComment } = useContract();
-  const [isVoting, setIsVoting] = useState(false);
+  const { userAddress, addComment } = useContract();
   const [showComments, setShowComments] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState("");
@@ -44,7 +42,13 @@ function PostCard({ post, reply = false }) {
   const [aiSuggestion, setAiSuggestion] = useState(null);
 
   // Get votes from blockchain
-  const { upvotes, downvotes, userVote } = usePostVotes(post.id);
+  const {
+    upvotes,
+    downvotes,
+    userVote,
+    refetchVotes,
+    refetchUserVote,
+  } = usePostVotes(post.id);
 
   // Get comments from blockchain
   const {
@@ -98,19 +102,6 @@ function PostCard({ post, reply = false }) {
   const acceptAiSuggestion = () => {
     setReplyContent(aiSuggestion);
     setAiSuggestion(null);
-  };
-
-  const handleVote = async (voteType) => {
-    if (!userAddress || isVoting) return;
-
-    setIsVoting(true);
-    try {
-      await vote(post.id, voteType);
-    } catch (error) {
-      console.error("Error voting:", error);
-    } finally {
-      setIsVoting(false);
-    }
   };
 
   const toggleComments = () => {
@@ -209,72 +200,37 @@ function PostCard({ post, reply = false }) {
         {/* Post actions */}
         <Group gap="md" mt="sm">
           {!reply && (
-            <Group gap="xs">
-            <Tooltip
-              label={
-                userAddress ? "Vote up" : "Connect your wallet to vote"
-              }
-            >
-              <ActionIcon
-                onClick={() => handleVote("up")}
-                variant={userVote === 1 ? "filled" : "subtle"}
-                color="blue"
-                size="sm"
-                disabled={!userAddress || isVoting}
-                loading={isVoting}
-              >
-                <IconArrowUp size={16} />
-              </ActionIcon>
-            </Tooltip>
-            <Text size="sm" fw={500}>
-              {upvotes}
-            </Text>
-
-            <Tooltip
-              label={
-                userAddress ? "Vote down" : "Connect your wallet to vote"
-              }
-            >
-              <ActionIcon
-                onClick={() => handleVote("down")}
-                variant={userVote === -1 ? "filled" : "subtle"}
-                color="red"
-                size="sm"
-                disabled={!userAddress || isVoting}
-                loading={isVoting}
-              >
-                <IconArrowDown size={16} />
-              </ActionIcon>
-            </Tooltip>
-            <Text size="sm" fw={500}>
-              {downvotes}
-            </Text>
-          </Group>
+            <Group gap="xs" align="center">
+              <UpVote
+                postId={post.id}
+                groupId={post.groupId}
+                disabled={!userAddress}
+                hasVoted={userVote === 1}
+                onSuccess={() => {
+                  refetchVotes?.();
+                  refetchUserVote?.();
+                }}
+              />
+              <Text size="xs" fw={600} c="dimmed">
+                {upvotes}
+              </Text>
+            </Group>
           )}
 
-          <Group gap={2}>
-            {!reply && (
-              <Button
-              variant="subtle"
-              size="xs"
-              leftSection={<IconMessageCircle size={14} />}
-              rightSection={
-                commentsCount > 0 ? (
-                  showComments ? (
-                    <IconChevronUp size={14} />
-                  ) : (
-                    <IconChevronDown size={14} />
-                  )
-                ) : null
-              }
-              color="gray"
-              onClick={commentsCount > 0 ? toggleComments : undefined}
-              style={{ cursor: commentsCount > 0 ? "pointer" : "default" }}
-            >
-              {commentsCount} comments
-            </Button>
-            )}
-
+          <DownVote
+            postId={post.id}
+            groupId={post.groupId}
+            disabled={!userAddress}
+            hasVoted={userVote === -1}
+            onSuccess={() => {
+              refetchVotes?.();
+              refetchUserVote?.();
+            }}
+          />
+          <Text size="xs" fw={600} c="dimmed">
+            {downvotes}
+          </Text>
+        </Group>
             {!reply && (
               <Button
                 variant="subtle"
@@ -286,8 +242,6 @@ function PostCard({ post, reply = false }) {
                 Reply
               </Button>
             )}
-          </Group>
-        </Group>
 
         <Collapse in={isReplying}>
           <Stack gap="xs" mt="sm">
