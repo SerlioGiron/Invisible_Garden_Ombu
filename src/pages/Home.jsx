@@ -27,19 +27,19 @@ import UpVote from "../components/UpVote";
 import DownVote from "../components/DownVote";
 import { usePostVotes } from "../hooks/usePostVotes";
 
-function RecentPostCard({ post, authenticated }) {
+function RecentPostCard({ post, authenticated, onVoteSuccess }) {
   const {
-    upvotes,
-    downvotes,
+    upvotes: hookUpvotes,
+    downvotes: hookDownvotes,
     userVote,
     refetchVotes,
     refetchUserVote,
-  } = usePostVotes(post.id);
+    recordVote,
+  } = usePostVotes(post.id, post.groupId);
 
-  const effectiveUpvotes =
-    typeof upvotes === "number" && !Number.isNaN(upvotes) ? upvotes : post.upvotes || 0;
-  const effectiveDownvotes =
-    typeof downvotes === "number" && !Number.isNaN(downvotes) ? downvotes : post.downvotes || 0;
+  // Use votes from post data directly (already fetched from blockchain)
+  const effectiveUpvotes = post.upvotes || 0;
+  const effectiveDownvotes = post.downvotes || 0;
 
   return (
     <Paper key={post.id} p="md" withBorder radius="md">
@@ -73,19 +73,35 @@ function RecentPostCard({ post, authenticated }) {
       </Text>
       <Group gap="md" align="center">
         <Group gap="xs" align="center">
-          <UpVote postId={post.id} groupId={post.groupId} disabled={!authenticated} hasVoted={userVote === 1} onSuccess={() => {
-            refetchVotes?.();
-            refetchUserVote?.();
-          }} />
+          <UpVote
+            postId={post.id}
+            groupId={post.groupId}
+            disabled={!authenticated}
+            hasVoted={userVote === 1}
+            recordVote={recordVote}
+            onSuccess={() => {
+              refetchVotes?.();
+              refetchUserVote?.();
+              onVoteSuccess?.();
+            }}
+          />
           <Text size="sm" fw={600}>
             {effectiveUpvotes}
           </Text>
         </Group>
         <Group gap="xs" align="center">
-          <DownVote postId={post.id} groupId={post.groupId} disabled={!authenticated} hasVoted={userVote === -1} onSuccess={() => {
-            refetchVotes?.();
-            refetchUserVote?.();
-          }} />
+          <DownVote
+            postId={post.id}
+            groupId={post.groupId}
+            disabled={!authenticated}
+            hasVoted={userVote === -1}
+            recordVote={recordVote}
+            onSuccess={() => {
+              refetchVotes?.();
+              refetchUserVote?.();
+              onVoteSuccess?.();
+            }}
+          />
           <Text size="sm" fw={600}>
             {effectiveDownvotes}
           </Text>
@@ -100,7 +116,7 @@ function Home() {
   const { authenticated } = usePrivy();
 
   // Using useGroupPosts hook to fetch all posts
-  const { posts: groupPosts, isLoading, error, totalPosts: groupTotalPosts } = useGroupPosts(DEFAULT_GROUP_ID);
+  const { posts: groupPosts, isLoading, error, totalPosts: groupTotalPosts, refetch: refetchGroupPosts } = useGroupPosts(DEFAULT_GROUP_ID);
 
   // Helper function to format timestamp
   function formatTimeAgo(timestamp) {
@@ -238,6 +254,7 @@ function Home() {
                   key={post.id}
                   post={post}
                   authenticated={authenticated}
+                  onVoteSuccess={refetchGroupPosts}
                 />
               ))}
             </Stack>

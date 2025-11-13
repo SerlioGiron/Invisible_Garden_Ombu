@@ -53,18 +53,27 @@ export function useGroupPosts(groupId = DEFAULT_GROUP_ID) {
 
         const postsData = await Promise.all(postsPromises);
         
-        const formattedPosts = postsData.map((post, index) => ({
-          id: index + 1, // Post IDs start from 1
-          groupId: groupId,
-          title: post[0], // title
-          content: post[1], // content
-          timestamp: Number(post[2]), // timestamp
-          upvotes: Number(post[3]), // upvotes
-          downvotes: Number(post[4]), // downvotes
-        }));
+        const formattedPosts = postsData.map((post, index) => {
+          const formattedPost = {
+            id: index + 1, // Post IDs start from 1
+            groupId: groupId,
+            title: post[0], // title
+            content: post[1], // content
+            timestamp: Number(post[2]), // timestamp
+            upvotes: Number(post[3]), // upvotes
+            downvotes: Number(post[4]), // downvotes
+          };
+          console.log(`📊 Post ${index + 1} data:`, {
+            title: formattedPost.title,
+            upvotes: formattedPost.upvotes,
+            downvotes: formattedPost.downvotes,
+            rawPost: post
+          });
+          return formattedPost;
+        });
 
         setPosts(formattedPosts);
-        console.log(`✅ Loaded ${formattedPosts.length} posts`);
+        console.log(`✅ Loaded ${formattedPosts.length} posts with votes:`, formattedPosts.map(p => ({ id: p.id, upvotes: p.upvotes, downvotes: p.downvotes })));
       } catch (err) {
         console.error('❌ Error fetching posts:', err);
         setError(err);

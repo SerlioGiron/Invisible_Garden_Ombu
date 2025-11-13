@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Loader } from "@mantine/core";
-import { IconArrowUp, IconCheck } from "@tabler/icons-react";
+import { IconArrowUp } from "@tabler/icons-react";
 import { useWaitForTransactionReceipt } from "wagmi";
 import { useContract } from "../hooks/useContract";
 
-function UpVote({ postId, groupId, disabled = false, hasVoted = false, onSuccess }) {
+function UpVote({ postId, groupId, disabled = false, hasVoted = false, onSuccess, recordVote }) {
   const { upvotePost } = useContract();
   const [transactionHash, setTransactionHash] = useState(null);
   const lastNotifiedHash = useRef(null);
@@ -21,10 +21,14 @@ function UpVote({ postId, groupId, disabled = false, hasVoted = false, onSuccess
       onSuccess &&
       lastNotifiedHash.current !== transactionHash
     ) {
+      // Record that this was an upvote (type = 1)
+      if (recordVote) {
+        recordVote(1);
+      }
       onSuccess(transactionHash);
       lastNotifiedHash.current = transactionHash;
     }
-  }, [isConfirmed, transactionHash, onSuccess]);
+  }, [isConfirmed, transactionHash, onSuccess, recordVote]);
 
   const handleUpvote = async () => {
     if (!postId || isConfirming || disabled || hasVoted) {
@@ -40,19 +44,26 @@ function UpVote({ postId, groupId, disabled = false, hasVoted = false, onSuccess
   };
 
   const isButtonDisabled = !postId || isConfirming || disabled || hasVoted;
-  const iconColor = isConfirmed || hasVoted ? "green" : "blue";
+  const isActive = isConfirmed || hasVoted;
 
   return (
     <Button
-      variant="subtle"
+      variant={isActive ? "filled" : "subtle"}
       color="blue"
       size="xs"
       onClick={handleUpvote}
       disabled={isButtonDisabled}
+      styles={{
+        root: {
+          backgroundColor: isActive ? "#228be6" : undefined,
+          '&:hover': {
+            backgroundColor: isActive ? "#1c7ed6" : undefined,
+          }
+        }
+      }}
     >
-      <IconArrowUp size={14} color={iconColor} />
+      <IconArrowUp size={14} color={isActive ? "white" : "blue"} />
       {isConfirming && <Loader size="xs" color="gray" />}
-      {isConfirmed && <IconCheck size={14} color="green" />}
     </Button>
   );
 }

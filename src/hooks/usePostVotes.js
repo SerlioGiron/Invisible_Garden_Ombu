@@ -1,49 +1,65 @@
 // src/hooks/usePostVotes.js
-import { useReadContract, useAccount } from "wagmi";
-import { CONTRACT_CONFIG } from "../services/contract";
+import { useReadContract } from "wagmi";
+import { CONTRACT_CONFIG, DEFAULT_GROUP_ID } from "../services/contract";
+import { getSemaphoreIdentityFromStorage } from "../services/semaphoreProof";
+import { useState, useEffect } from "react";
 
-export function usePostVotes(postId) {
-  const { address: userAddress } = useAccount();
+export function usePostVotes(postId, groupId = DEFAULT_GROUP_ID) {
+  const [identityCommitment, setIdentityCommitment] = useState(null);
+  const [voteType, setVoteType] = useState(0); // 0 = no vote, 1 = upvote, -1 = downvote
 
+  // Get identity commitment from storage
+  useEffect(() => {
+    const identity = getSemaphoreIdentityFromStorage();
+    if (identity) {
+      setIdentityCommitment(BigInt(identity.commitment.toString()));
+    }
+  }, []);
+
+  // Load vote type from localStorage
+  useEffect(() => {
+    if (postId && identityCommitment) {
+      const key = `vote_${groupId}_${postId}_${identityCommitment.toString()}`;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        setVoteType(parseInt(stored));
+      }
+    }
+  }, [postId, groupId, identityCommitment]);
+
+  // Query if user has voted using identity commitment
   const {
-    data: votes,
-    refetch: refetchVotes,
-  } = useReadContract({
-    address: CONTRACT_CONFIG.address,
-    abi: CONTRACT_CONFIG.abi,
-    functionName: "getVotes",
-    args: [postId],
-    enabled: postId !== undefined,
-    query: {
-      staleTime: 30000, // 30 segundos
-      cacheTime: 300000, // 5 minutos
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-    },
-  });
-
-  const {
-    data: userVote,
+    data: hasVoted,
     refetch: refetchUserVote,
   } = useReadContract({
     address: CONTRACT_CONFIG.address,
     abi: CONTRACT_CONFIG.abi,
-    functionName: "myVote",
-    args: [postId],
-    enabled: postId !== undefined && !!userAddress,
+    functionName: "userPostVotes",
+    args: identityCommitment ? [identityCommitment, groupId, postId] : undefined,
+    enabled: postId !== undefined && identityCommitment !== null,
     query: {
-      staleTime: 30000, // 30 segundos
-      cacheTime: 300000, // 5 minutos
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
+      staleTime: 30000, // 30 seconds
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   });
 
+  // Store vote type when user votes
+  const recordVote = (type) => {
+    if (postId && identityCommitment) {
+      const key = `vote_${groupId}_${postId}_${identityCommitment.toString()}`;
+      localStorage.setItem(key, type.toString());
+      setVoteType(type);
+    }
+  };
+
   return {
-    upvotes: votes ? parseInt(votes[0].toString()) : 0,
-    downvotes: votes ? parseInt(votes[1].toString()) : 0,
-    userVote: userVote ? parseInt(userVote.toString()) : 0,
-    refetchVotes,
+    upvotes: 0, // These will come from post data
+    downvotes: 0, // These will come from post data
+    userVote: hasVoted ? voteType : 0,
+    hasVoted: Boolean(hasVoted),
+    refetchVotes: () => {}, // Not needed, votes come from post data
     refetchUserVote,
+    recordVote, // New function to record vote type
   };
 }
