@@ -1,4 +1,4 @@
-export const OMBU_CONTRACT_ADDRESS = "0x38f197944019061831ceea48899840f05bdd0812";
+export const OMBU_CONTRACT_ADDRESS = "0xba2D5EeBdaD4A3d5283F936947B6cF60F8DCD3Fb";
 
 /**
  * Semaphore Contract Address (Arbitrum Sepolia)
