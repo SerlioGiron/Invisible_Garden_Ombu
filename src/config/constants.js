@@ -1,4 +1,4 @@
-export const OMBU_CONTRACT_ADDRESS = "0x38f197944019061831ceea48899840f05bdd0812";
+export const OMBU_CONTRACT_ADDRESS = "0xba2D5EeBdaD4A3d5283F936947B6cF60F8DCD3Fb";
 
 /**
  * Semaphore Contract Address (Arbitrum Sepolia)
@@ -6,7 +6,7 @@ export const OMBU_CONTRACT_ADDRESS = "0x38f197944019061831ceea48899840f05bdd0812
  * Address: https://docs.semaphore.pse.dev/deployed-contracts
  */
 export const SEMAPHORE_CONTRACT_ADDRESS = "0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D";
-export const DEFAULT_GROUP_ID = 7;
+export const DEFAULT_GROUP_ID = 8;
 export const INITIAL_GROUP_NAME = "Invisible Garden";
 export const CHAIN_ID = 421614;
 export const NETWORK_NAME = "Arbitrum Sepolia";

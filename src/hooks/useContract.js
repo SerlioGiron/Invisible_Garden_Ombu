@@ -28,24 +28,12 @@ export function useContract() {
   const publicClient = usePublicClient();
   const [useFallback, setUseFallback] = useState(false);
 
-  // Function to get all posts
-  const {
-    data: rawPosts,
-    isLoading: isLoadingPosts,
-    refetch: refetchPosts,
-    error,
-  } = useReadContract({
-    address: CONTRACT_CONFIG.address,
-    abi: CONTRACT_CONFIG.abi,
-    functionName: "getAllPosts",
-    query: {
-      staleTime: 10000, // 10 seconds
-      cacheTime: 300000, // 5 minutes
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchInterval: 30000, // Auto refetch every 30 seconds
-    },
-  });
+  // Note: getAllPosts function doesn't exist in the contract
+  // Posts need to be fetched individually or through a different method
+  const rawPosts = null;
+  const isLoadingPosts = false;
+  const refetchPosts = () => {};
+  const error = null;
 
   // Detect rate limiting errors and activate fallback
   useEffect(() => {
@@ -262,7 +250,7 @@ export function useContract() {
         groupId: normalizedGroupId.toString(),
         postId: normalizedPostId.toString(),
         identityCommitment: commitment.toString(),
-        isUpvote: false,
+        isUpvote: true,
       });
 
       return result?.transactionHash || null;
@@ -299,7 +287,7 @@ export function useContract() {
         groupId: normalizedGroupId.toString(),
         postId: normalizedPostId.toString(),
         identityCommitment: commitment.toString(),
-        isDownvote: true,
+        isUpvote: false,
       });
 
       return result?.transactionHash || null;
@@ -373,21 +361,22 @@ export function useContract() {
   // Function to create a main post
   // Automatically generates Semaphore proof if identity exists (anonymous)
   // Otherwise falls back to direct contract call (non-anonymous)
-  const createMainPost = async (groupId, content, feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points) => {
+  const createMainPost = async (groupId, title, content, feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points) => {
     try {
-      console.log("Creating main post in group:", groupId, "Content:", content);
+      console.log("Creating main post in group:", groupId, "Title:", title, "Content:", content);
       
       // If Semaphore proof parameters are explicitly provided, use them
       if (feedback !== undefined && merkleTreeDepth !== undefined && merkleTreeRoot !== undefined && nullifier !== undefined && points !== undefined) {
         console.log("Using provided Semaphore proof parameters");
-        const response = await sendFeedbackViaRelayer({ 
-          content, 
-          groupId, 
-          feedback, 
-          merkleTreeDepth, 
-          merkleTreeRoot, 
-          nullifier, 
-          points 
+        const response = await sendFeedbackViaRelayer({
+          title,
+          content,
+          groupId,
+          feedback,
+          merkleTreeDepth,
+          merkleTreeRoot,
+          nullifier,
+          points
         });
         console.log("Main post created successfully:", response);
         return response;
@@ -420,6 +409,7 @@ export function useContract() {
           
           console.log("📤 Sending anonymous post via relayer...");
           const response = await sendFeedbackViaRelayer({
+            title,
             content,
             groupId,
             feedback: proofData.feedback,
@@ -440,14 +430,9 @@ export function useContract() {
 
       // Fallback to non-anonymous post via direct contract call
       console.log("Using non-anonymous post via direct contract call");
-      await writeContract({
-        address: CONTRACT_CONFIG.address,
-        abi: CONTRACT_CONFIG.abi,
-        functionName: "createMainPost",
-        args: [groupId, content],
-      });
-      console.log("Main post created successfully");
-      return true;
+      // Note: Direct contract calls without Semaphore proof are not supported in this version
+      // The contract requires Semaphore proof parameters
+      throw new Error("Cannot create post without Semaphore identity. Please join the group first.");
     } catch (error) {
       console.error("Error creating main post:", error);
       throw error;

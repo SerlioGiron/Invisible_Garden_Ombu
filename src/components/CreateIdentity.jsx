@@ -162,27 +162,27 @@ export function useCreateIdentity() {
                 const newIdentity = new Identity(signature);
                 const commitmentValue = newIdentity.commitment.toString();
 
-                console.log("✅ TEST: Identity created successfully!", {
-                    publicKey: newIdentity.publicKey,
+                console.log("✅ Identity created successfully!", {
                     commitment: commitmentValue,
-                    privateKey: newIdentity.privateKey ? "present" : "missing",
+                    walletAddress,
                 });
 
 
                 // Option 2: Via relayer (gasless - relayer pays for gas)
-                console.log("🔵 TEST: Adding member to Semaphore group via relayer...");
+                const relayerUrl = import.meta.env.VITE_RELAYER_URL || 'http://localhost:3001';
+                console.log("🔵 Adding member to Semaphore group via relayer...");
                 console.log("   Commitment:", commitmentValue);
                 console.log("   Group ID:", DEFAULT_GROUP_ID);
-                console.log("   Relayer URL: http://localhost:3001/api/join");
-                
+                console.log("   Relayer URL:", `${relayerUrl}/api/join`);
+
                 try {
                     const requestBody = {
                         identityCommitment: commitmentValue,
                         groupId: DEFAULT_GROUP_ID
                     };
                     console.log("   Request body:", JSON.stringify(requestBody, null, 2));
-                    
-                    const response = await fetch('http://localhost:3001/api/join', {
+
+                    const response = await fetch(`${relayerUrl}/api/join`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -190,47 +190,34 @@ export function useCreateIdentity() {
                         body: JSON.stringify(requestBody),
                     });
 
-                    console.log("   Response status:", response.status);
-                    console.log("   Response ok:", response.ok);
-
                     if (!response.ok) {
                         const errorData = await response.json();
-                        console.error("❌ TEST: Relayer error response:");
-                        console.error("   Error:", errorData.error);
-                        console.error("   Message:", errorData.message);
-                        console.error("   Details:", errorData.details);
-                        console.error("   Code:", errorData.code);
-                        console.error("   Error data:", errorData.errorData);
+                        console.error("❌ Relayer error:", errorData.message || errorData.error);
                         throw new Error(errorData.message || errorData.error || 'Failed to join group');
                     }
 
                     const result = await response.json();
-                    console.log("✅ TEST: Member added to Semaphore group successfully!");
-                    console.log("   Result:", JSON.stringify(result, null, 2));
+                    console.log("✅ Successfully joined Semaphore group!");
+                    console.log("   Transaction:", result.transactionHash);
                 } catch (relayerError) {
-                    console.error("❌ TEST: Error adding member via relayer:");
-                    console.error("   Error type:", relayerError.constructor.name);
-                    console.error("   Error message:", relayerError.message);
-                    console.error("   Error stack:", relayerError.stack);
+                    console.error("❌ Error joining group via relayer:", relayerError.message);
                     throw relayerError;
                 }
 
                 if (typeof window !== "undefined") {
                     try {
                         localStorage.setItem("ombuSemaphoreCommitment", commitmentValue);
-                        // Store the signature so we can reconstruct the identity for proof generation
                         localStorage.setItem("ombuSemaphoreSignature", signature);
-                        // Store wallet address to detect wallet changes
                         localStorage.setItem("ombuSemaphoreWalletAddress", walletAddress);
                         walletAddressRef.current = walletAddress;
-                        console.log("✅ TEST: Commitment, signature, and wallet address stored in localStorage");
+                        console.log("✅ Identity saved to localStorage");
                         window.dispatchEvent(
                             new CustomEvent("ombuCommitmentCreated", {
                                 detail: commitmentValue,
                             })
                         );
                     } catch (storageError) {
-                        console.warn("⚠️ TEST: Unable to persist commitment in localStorage", storageError);
+                        console.warn("⚠️ Unable to persist identity in localStorage", storageError);
                     }
                 }
 
@@ -238,7 +225,7 @@ export function useCreateIdentity() {
                     setCommitment(commitmentValue);
                 }
             } catch (err) {
-                console.error("❌ TEST: Error creating identity:", err);
+                console.error("❌ Error creating identity:", err);
                 if (!cancelled) {
                     setError(err);
                     identityCreatedRef.current = false;

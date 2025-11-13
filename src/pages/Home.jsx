@@ -18,7 +18,6 @@ import {
   IconMessageCircle,
   IconStar,
   IconUser,
-  IconArrowDown,
 } from "@tabler/icons-react";
 import { useNavigate } from "react-router";
 import { usePrivy } from "@privy-io/react-auth";

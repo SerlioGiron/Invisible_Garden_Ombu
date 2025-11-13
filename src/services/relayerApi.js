@@ -43,6 +43,7 @@ export async function joinGroupViaRelayer(identityCommitment, groupId = DEFAULT_
 /**
  * Send feedback via the relayer (creates a main post)
  * @param {Object} params - Post parameters
+ * @param {string} params.title - The post title
  * @param {string} params.content - The post content/message
  * @param {number} params.groupId - Group ID
  * @param {string|number} params.feedback - The feedback signal (uint256) used in the Semaphore proof
@@ -52,14 +53,15 @@ export async function joinGroupViaRelayer(identityCommitment, groupId = DEFAULT_
  * @param {number[]} params.points - The proof points array (8 uint256 values)
  * @returns {Promise<{success: boolean, transactionHash: string, blockNumber: number}>}
  */
-export async function sendFeedbackViaRelayer({ 
-  content, 
-  groupId, 
-  feedback, 
-  merkleTreeDepth, 
-  merkleTreeRoot, 
-  nullifier, 
-  points 
+export async function sendFeedbackViaRelayer({
+  title,
+  content,
+  groupId,
+  feedback,
+  merkleTreeDepth,
+  merkleTreeRoot,
+  nullifier,
+  points
 }) {
   try {
     console.log('🔄 Calling relayer to create post...');
@@ -70,6 +72,7 @@ export async function sendFeedbackViaRelayer({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        title,
         content,
         groupId,
         feedback,

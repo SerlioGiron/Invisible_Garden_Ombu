@@ -15,6 +15,7 @@ contract Ombu {
 
     // couter for the number of posts created, so we can follow an incremental id for posts.
     mapping(uint256 groupId => uint256 postIDCounter) public groupPostCounters;
+    mapping(uint256 groupId => mapping(uint256 postIDCounter => uint256 subPostIDCounter)) public groupSubPostCounters;
 
     // groups ids created in semaphore.
     uint256[] public groups;
@@ -30,10 +31,11 @@ contract Ombu {
         postSubPosts;
 
     // mapping to save the user's vote in any main post.
-    mapping(address user => mapping(uint256 groupId => mapping(uint256 postId => bool hasVoted))) public userPostVotes;
+    mapping(uint256 identityCommitment => mapping(uint256 groupId => mapping(uint256 postId => bool hasVoted))) public
+        userPostVotes;
     // mapping to save the user's vote in any sub post.
     mapping(
-        address user
+        uint256 identityCommitment
             => mapping(uint256 groupId => mapping(uint256 postId => mapping(uint256 subPostId => bool hasVoted)))
     ) public userSubPostVotes;
 
@@ -67,6 +69,7 @@ contract Ombu {
         uint256 _merkleTreeRoot,
         uint256 _nullifier,
         uint256 _feedback,
+        string calldata _title,
         string calldata _content,
         uint256[8] calldata _points
     ) external {
@@ -79,12 +82,9 @@ contract Ombu {
         semaphore.validateProof(_groupId, proof);
 
         // If proof is valid, create the post
-        // Note: author is set to address(1) to maintain anonymity via Semaphore
-        // address(1) is used as a marker for anonymous posts (verified by Semaphore proof)
-        // address(0) is reserved for checking if a post exists
 
         OmbuPost memory newPost =
-            OmbuPost({content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0});
+            OmbuPost({title: _title, content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0});
         // post counter starts from 1, while groups ID can start from 0, because semaphore starts from group ID = 0.
         uint256 postIDCounter = groupPostCounters[_groupId];
         postIDCounter++;
@@ -101,6 +101,7 @@ contract Ombu {
         uint256 _merkleTreeRoot,
         uint256 _nullifier,
         uint256 _feedback,
+        string calldata _title,
         string calldata _content,
         uint256[8] calldata _points
     ) external {
@@ -113,18 +114,14 @@ contract Ombu {
         semaphore.validateProof(_groupId, proof);
 
         // If proof is valid, create the post
-        // Note: author is set to address(1) to maintain anonymity via Semaphore
-        // address(1) is used as a marker for anonymous posts (verified by Semaphore proof)
-        // address(0) is reserved for checking if a post exists
+        // OmbuPost memory post = groupPosts[_groupId][_mainPostId];
+        require(groupPosts[_groupId][_mainPostId].timestamp != 0, "Main Post does not exist");
 
-        OmbuPost storage post = groupPosts[_groupId][_mainPostId];
-        require(post.timestamp != 0, "Main Post does not exist");
-
-        OmbuPost memory newSubPost =
-            OmbuPost({content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0});
-
-        uint256 subPostCounter = 1;
-        postSubPosts[_groupId][_mainPostId][subPostCounter] = newSubPost;
+        uint256 subPostCounter = groupSubPostCounters[_groupId][_mainPostId];
+        subPostCounter++;
+        groupSubPostCounters[_groupId][_mainPostId] = subPostCounter;
+        postSubPosts[_groupId][_mainPostId][subPostCounter] =
+            OmbuPost({title: _title, content: _content, timestamp: uint32(block.timestamp), upvotes: 0, downvotes: 0});
     }
 
     // Function to vote on a main post.
@@ -135,7 +132,7 @@ contract Ombu {
         OmbuPost storage post = groupPosts[_groupId][_postId];
         require(post.timestamp != 0, "Post does not exist");
 
-        bool hasVoted = userPostVotes[msg.sender][_groupId][_postId];
+        bool hasVoted = userPostVotes[_identityCommitment][_groupId][_postId];
         require(!hasVoted, "User has already voted on this post");
 
         if (_isUpvote) {
@@ -143,7 +140,7 @@ contract Ombu {
         } else {
             post.downvotes += 1;
         }
-        userPostVotes[msg.sender][_groupId][_postId] = true;
+        userPostVotes[_identityCommitment][_groupId][_postId] = true;
     }
 
     // Function to vote on a sub post.
@@ -160,7 +157,7 @@ contract Ombu {
         OmbuPost storage subPost = postSubPosts[_groupId][_postId][_subPostId];
         require(subPost.timestamp != 0, "SubPost does not exist");
 
-        bool hasVoted = userSubPostVotes[msg.sender][_groupId][_postId][_subPostId];
+        bool hasVoted = userSubPostVotes[_identityCommitment][_groupId][_postId][_subPostId];
         require(!hasVoted, "User has already voted on this subpost");
 
         if (_isUpvote) {
@@ -168,7 +165,7 @@ contract Ombu {
         } else {
             subPost.downvotes += 1;
         }
-        userSubPostVotes[msg.sender][_groupId][_postId][_subPostId] = true;
+        userSubPostVotes[_identityCommitment][_groupId][_postId][_subPostId] = true;
     }
 
     // function to delete a vote on post.
@@ -179,7 +176,7 @@ contract Ombu {
         OmbuPost storage post = groupPosts[_groupId][_postId];
         require(post.timestamp != 0, "Post does not exist");
 
-        bool hasVoted = userPostVotes[msg.sender][_groupId][_postId];
+        bool hasVoted = userPostVotes[_identityCommitment][_groupId][_postId];
         require(hasVoted, "User has not voted on this post");
 
         if (_isUpvote) {
@@ -187,7 +184,7 @@ contract Ombu {
         } else {
             post.downvotes--;
         }
-        userPostVotes[msg.sender][_groupId][_postId] = false;
+        userPostVotes[_identityCommitment][_groupId][_postId] = false;
     }
 
     // Function to delete a vote on sub post.
@@ -204,7 +201,7 @@ contract Ombu {
         OmbuPost storage subPost = postSubPosts[_groupId][_postId][_subPostId];
         require(subPost.timestamp != 0, "SubPost does not exist");
 
-        bool hasVoted = userSubPostVotes[msg.sender][_groupId][_postId][_subPostId];
+        bool hasVoted = userSubPostVotes[_identityCommitment][_groupId][_postId][_subPostId];
         require(hasVoted, "User has not voted on this subpost");
 
         if (_isUpvote) {
@@ -212,7 +209,7 @@ contract Ombu {
         } else {
             subPost.downvotes--;
         }
-        userSubPostVotes[msg.sender][_groupId][_postId][_subPostId] = false;
+        userSubPostVotes[_identityCommitment][_groupId][_postId][_subPostId] = false;
     }
 
     /****** Functions to Manage Groups *****/
