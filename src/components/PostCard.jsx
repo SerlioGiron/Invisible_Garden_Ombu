@@ -43,12 +43,17 @@ function PostCard({ post, reply = false }) {
 
   // Get votes from blockchain
   const {
-    upvotes,
-    downvotes,
+    upvotes: hookUpvotes,
+    downvotes: hookDownvotes,
     userVote,
     refetchVotes,
     refetchUserVote,
-  } = usePostVotes(post.id);
+    recordVote,
+  } = usePostVotes(post.id, post.groupId);
+
+  // Use votes from post data (already fetched from blockchain)
+  const upvotes = post.upvotes || 0;
+  const downvotes = post.downvotes || 0;
 
   // Get comments from blockchain
   const {
@@ -206,6 +211,7 @@ function PostCard({ post, reply = false }) {
                 groupId={post.groupId}
                 disabled={!userAddress}
                 hasVoted={userVote === 1}
+                recordVote={recordVote}
                 onSuccess={() => {
                   refetchVotes?.();
                   refetchUserVote?.();
@@ -222,6 +228,7 @@ function PostCard({ post, reply = false }) {
             groupId={post.groupId}
             disabled={!userAddress}
             hasVoted={userVote === -1}
+            recordVote={recordVote}
             onSuccess={() => {
               refetchVotes?.();
               refetchUserVote?.();

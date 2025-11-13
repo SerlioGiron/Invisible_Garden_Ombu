@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Loader } from "@mantine/core";
-import { IconArrowDown, IconCheck } from "@tabler/icons-react";
+import { IconArrowDown } from "@tabler/icons-react";
 import { useWaitForTransactionReceipt } from "wagmi";
 import { useContract } from "../hooks/useContract";
 
-function DownVote({ postId, groupId, disabled = false, hasVoted = false, onSuccess }) {
+function DownVote({ postId, groupId, disabled = false, hasVoted = false, onSuccess, recordVote }) {
   const { downvotePost } = useContract();
   const [transactionHash, setTransactionHash] = useState(null);
   const lastNotifiedHash = useRef(null);
@@ -21,10 +21,14 @@ function DownVote({ postId, groupId, disabled = false, hasVoted = false, onSucce
       onSuccess &&
       lastNotifiedHash.current !== transactionHash
     ) {
+      // Record that this was a downvote (type = -1)
+      if (recordVote) {
+        recordVote(-1);
+      }
       onSuccess(transactionHash);
       lastNotifiedHash.current = transactionHash;
     }
-  }, [isConfirmed, transactionHash, onSuccess]);
+  }, [isConfirmed, transactionHash, onSuccess, recordVote]);
 
   const handleDownvote = async () => {
     if (!postId || isConfirming || disabled || hasVoted) {
@@ -40,19 +44,26 @@ function DownVote({ postId, groupId, disabled = false, hasVoted = false, onSucce
   };
 
   const isButtonDisabled = !postId || isConfirming || disabled || hasVoted;
-  const iconColor = "red";
+  const isActive = isConfirmed || hasVoted;
 
   return (
     <Button
-      variant="subtle"
+      variant={isActive ? "filled" : "subtle"}
       color="red"
       size="xs"
       onClick={handleDownvote}
       disabled={isButtonDisabled}
+      styles={{
+        root: {
+          backgroundColor: isActive ? "#fa5252" : undefined,
+          '&:hover': {
+            backgroundColor: isActive ? "#f03e3e" : undefined,
+          }
+        }
+      }}
     >
-      <IconArrowDown size={14} color={iconColor} />
+      <IconArrowDown size={14} color={isActive ? "white" : "red"} />
       {isConfirming && <Loader size="xs" color="gray" />}
-      {isConfirmed && <IconCheck size={14} color="red" />}
     </Button>
   );
 }

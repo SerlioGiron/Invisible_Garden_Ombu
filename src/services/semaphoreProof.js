@@ -129,21 +129,51 @@ export async function generateSemaphoreProof(identity, groupId, signal, groupDat
       ? groupData.members.map(m => convertToBigInt(m))
       : [];
 
-    console.log("🔍 Creating group with members:", members);
+    console.log("🔍 Creating group with", members.length, "members");
+    console.log("🔍 User's commitment:", identity.commitment.toString());
+
+    if (members.length === 0) {
+      console.warn("⚠️ No members found in database for group", groupId);
+      throw new Error(
+        `No members found in the group database. This means:\n` +
+        `1. The group might not exist yet\n` +
+        `2. The database is empty or not accessible\n` +
+        `3. You're using the wrong group ID\n\n` +
+        `Group ID: ${groupId}\n` +
+        `Please contact support or check that the relayer is running properly.`
+      );
+    }
+
+    const isUserInGroup = members.some(m => m.toString() === identity.commitment.toString());
+    console.log("🔍 Is user in members list?", isUserInGroup);
+
+    if (!isUserInGroup) {
+      throw new Error(
+        `Your identity commitment is not in the group yet. This might mean:\n` +
+        `1. You just joined and the transaction hasn't been confirmed\n` +
+        `2. The relayer failed to add you to the group\n` +
+        `3. The database is out of sync\n\n` +
+        `Your commitment: ${identity.commitment.toString()}\n` +
+        `Group members count: ${members.length}\n\n` +
+        `Try logging out and logging back in, or wait a few moments and try again.`
+      );
+    }
+
     const group = new Group(members);
     console.log("🔍 Group created - root:", group.root.toString(), "depth:", group.depth, "size:", group.size);
     console.log("🔍 Expected on-chain root:", groupData.root);
     console.log("🔍 On-chain group size:", groupData.size);
 
     // Verify the group root matches (this is critical for proof validation)
-    // NOTE: Local verification skipped - proceeding with proof generation anyway
     if (group.root.toString() !== groupData.root) {
-      console.warn("⚠️ Group root mismatch (local verification skipped)");
+      console.warn("⚠️ Group root mismatch");
       console.warn("   Local root:", group.root.toString());
       console.warn("   On-chain root:", groupData.root);
       console.warn("   Local group size:", group.size, "On-chain group size:", groupData.size);
-      console.warn("   Proceeding with proof generation anyway...");
-      // Skip throwing error - let the on-chain validation handle it
+      throw new Error(
+        `Group data mismatch. The local group reconstruction doesn't match the on-chain state.\n` +
+        `This usually means the member list from the database is incomplete or out of sync.`
+      );
     }
 
     // Generate the proof
