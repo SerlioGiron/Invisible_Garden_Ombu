@@ -360,11 +360,8 @@ export function useContract() {
   // Otherwise falls back to direct contract call (non-anonymous)
   const createMainPost = async (groupId, title, content, feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points) => {
     try {
-      console.log("Creating main post in group:", groupId, "Title:", title, "Content:", content);
-      
       // If Semaphore proof parameters are explicitly provided, use them
       if (feedback !== undefined && merkleTreeDepth !== undefined && merkleTreeRoot !== undefined && nullifier !== undefined && points !== undefined) {
-        console.log("Using provided Semaphore proof parameters");
         const response = await sendFeedbackViaRelayer({
           title,
           content,
@@ -375,39 +372,26 @@ export function useContract() {
           nullifier,
           points
         });
-        console.log("Main post created successfully:", response);
+        console.log("✅ Post created:", response.transactionHash);
         return response;
       }
 
       // Try to generate proof automatically if identity exists
       const identity = getSemaphoreIdentityFromStorage();
       if (!identity) {
-        console.log("⚠️ No Semaphore identity found. Creating non-anonymous post. To enable anonymous posts, make sure you're logged in and have joined the Semaphore group.");
+        console.log("⚠️ No Semaphore identity found. To enable anonymous posts, make sure you're logged in and have joined the Semaphore group.");
       }
       
       if (identity && publicClient) {
         try {
-          console.log("🔐 Generating Semaphore proof for anonymous post...");
-
           // Fetch group data from Semaphore contract via relayer
           const groupData = await fetchGroupData(groupId);
-          console.log("📊 Group data fetched (raw):", JSON.stringify(groupData, null, 2));
-          console.log("📊 Group data members type:", typeof groupData.members);
-          console.log("📊 Group data members isArray:", Array.isArray(groupData.members));
-          console.log("📊 Group data summary:", {
-            depth: groupData.depth,
-            size: groupData.size,
-            membersCount: groupData.members?.length || 0
-          });
-          
+
           // Generate proof using content + timestamp as signal to ensure uniqueness
           // This prevents nullifier reuse when creating multiple posts
           const uniqueSignal = `${content}||${Date.now()}||${Math.random()}`;
-          console.log("🔐 Generating unique signal for post:", uniqueSignal.substring(0, 50) + "...");
           const proofData = await generateSemaphoreProof(identity, groupId, uniqueSignal, groupData);
-          console.log("✅ Proof generated successfully");
-          
-          console.log("📤 Sending anonymous post via relayer...");
+
           const response = await sendFeedbackViaRelayer({
             title,
             content,
@@ -418,18 +402,16 @@ export function useContract() {
             nullifier: proofData.nullifier,
             points: proofData.points,
           });
-          
-          console.log("✅ Anonymous post created successfully:", response);
+
+          console.log("✅ Post created:", response.transactionHash);
           return response;
         } catch (proofError) {
           console.error("❌ Failed to generate Semaphore proof:", proofError);
-          console.warn("⚠️ Falling back to non-anonymous post");
-          // Fall through to non-anonymous post
+          throw proofError;
         }
       }
 
       // Fallback to non-anonymous post via direct contract call
-      console.log("Using non-anonymous post via direct contract call");
       // Note: Direct contract calls without Semaphore proof are not supported in this version
       // The contract requires Semaphore proof parameters
       throw new Error("Cannot create post without Semaphore identity. Please join the group first.");

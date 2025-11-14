@@ -15,8 +15,6 @@ const RELAYER_URL = import.meta.env.VITE_RELAYER_URL || 'http://localhost:3001';
  */
 export async function joinGroupViaRelayer(identityCommitment, groupId = DEFAULT_GROUP_ID) {
   try {
-    console.log('🔄 Calling relayer to join group...');
-    
     const response = await fetch(`${RELAYER_URL}/api/join`, {
       method: 'POST',
       headers: {
@@ -31,11 +29,11 @@ export async function joinGroupViaRelayer(identityCommitment, groupId = DEFAULT_
     }
 
     const result = await response.json();
-    console.log('✅ Successfully joined group:', result);
-    
+    console.log('✅ Joined group:', result.transactionHash);
+
     return result;
   } catch (error) {
-    console.error('❌ Error calling relayer (join):', error);
+    console.error('❌ Error joining group:', error);
     throw error;
   }
 }
@@ -64,8 +62,6 @@ export async function sendFeedbackViaRelayer({
   points
 }) {
   try {
-    console.log('🔄 Calling relayer to create post...');
-    
     const response = await fetch(`${RELAYER_URL}/api/feedback`, {
       method: 'POST',
       headers: {
@@ -89,12 +85,11 @@ export async function sendFeedbackViaRelayer({
     }
 
     const result = await response.json();
-    console.log('✅ Post created successfully:', result);
-    console.log('Transaction hash:', result.transactionHash);
-    
+    console.log('✅ Post created:', result.transactionHash);
+
     return result;
   } catch (error) {
-    console.error('❌ Error calling relayer (feedback):', error);
+    console.error('❌ Error creating post:', error);
     throw error;
   }
 }
@@ -106,8 +101,6 @@ export async function voteOnPostViaRelayer({
   isUpvote = true,
 }) {
   try {
-    console.log("🔄 Calling relayer to submit vote...");
-
     const response = await fetch(`${RELAYER_URL}/api/vote`, {
       method: "POST",
       headers: {
@@ -127,10 +120,10 @@ export async function voteOnPostViaRelayer({
     }
 
     const result = await response.json();
-    console.log("✅ Vote submitted via relayer:", result);
+    console.log("✅ Vote submitted:", result.transactionHash);
     return result;
   } catch (error) {
-    console.error("❌ Error calling relayer (vote):", error);
+    console.error("❌ Error voting:", error);
     throw error;
   }
 }
@@ -164,10 +157,6 @@ export async function checkRelayerHealth() {
  */
 export async function verifyCommitmentOnChain(identityCommitment, groupId = DEFAULT_GROUP_ID) {
   try {
-    console.log('🔍 Verifying commitment in database...');
-    console.log('   Commitment:', identityCommitment);
-    console.log('   Group ID:', groupId);
-
     const response = await fetch(
       `${RELAYER_URL}/api/check-member?identityCommitment=${identityCommitment}&groupId=${groupId}`
     );
@@ -178,8 +167,7 @@ export async function verifyCommitmentOnChain(identityCommitment, groupId = DEFA
     }
 
     const result = await response.json();
-    console.log('✅ Verification result:', result);
-    console.log('   Source:', result.source || 'database');
+    console.log('✅ Verified:', result.isMember ? 'Member' : 'Not a member');
 
     return result;
   } catch (error) {

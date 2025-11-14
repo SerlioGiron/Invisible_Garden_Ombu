@@ -35,9 +35,8 @@ export function useCreateIdentity() {
                 const commitmentValue = identity.commitment.toString();
                 setCommitment(commitmentValue);
                 walletAddressRef.current = storedWalletAddress;
-                console.log("✅ Loaded identity from signature. Commitment:", commitmentValue);
             } catch (error) {
-                console.warn("⚠️ Failed to reconstruct identity from signature. Will recreate.", error);
+                console.warn("⚠️ Failed to reconstruct identity, will recreate");
                 localStorage.removeItem("ombuSemaphoreSignature");
                 localStorage.removeItem("ombuSemaphoreWalletAddress");
                 setCommitment(null);
@@ -113,18 +112,6 @@ export function useCreateIdentity() {
                 return;
             }
 
-            // Log current identity details on login
-            try {
-                const identity = new Identity(storedSignature);
-                console.log("🔑 User logged in with existing identity:");
-                console.log("   Wallet Address:", storedWalletAddress);
-                console.log("   Commitment Hash:", commitment);
-                console.log("   Public Key:", identity.publicKey);
-                console.log("   Group ID:", DEFAULT_GROUP_ID);
-            } catch (identityError) {
-                console.error("❌ Error reconstructing identity for logging:", identityError);
-            }
-
             return;
         }
 
@@ -163,25 +150,14 @@ export function useCreateIdentity() {
                 const newIdentity = new Identity(signature);
                 const commitmentValue = newIdentity.commitment.toString();
 
-                console.log("✅ Identity created successfully!", {
-                    commitment: commitmentValue,
-                    walletAddress,
-                });
-
-
-                // Option 2: Via relayer (gasless - relayer pays for gas)
+                // Via relayer (gasless - relayer pays for gas)
                 const relayerUrl = import.meta.env.VITE_RELAYER_URL || 'http://localhost:3001';
-                console.log("🔵 Adding member to Semaphore group via relayer...");
-                console.log("   Commitment:", commitmentValue);
-                console.log("   Group ID:", DEFAULT_GROUP_ID);
-                console.log("   Relayer URL:", `${relayerUrl}/api/join`);
 
                 try {
                     const requestBody = {
                         identityCommitment: commitmentValue,
                         groupId: DEFAULT_GROUP_ID
                     };
-                    console.log("   Request body:", JSON.stringify(requestBody, null, 2));
 
                     const response = await fetch(`${relayerUrl}/api/join`, {
                         method: 'POST',
@@ -193,36 +169,27 @@ export function useCreateIdentity() {
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        console.error("❌ Relayer error:", errorData.message || errorData.error);
                         throw new Error(errorData.message || errorData.error || 'Failed to join group');
                     }
 
                     const result = await response.json();
-                    console.log("✅ Successfully joined Semaphore group!");
-                    console.log("   Transaction:", result.transactionHash);
+                    console.log("✅ Joined group:", result.transactionHash);
 
                     // Verify that the commitment was stored in the database
-                    console.log("🔍 Verifying commitment was stored in database...");
                     try {
                         const verifyResponse = await fetch(`${relayerUrl}/api/check-member?identityCommitment=${commitmentValue}&groupId=${DEFAULT_GROUP_ID}`);
 
                         if (verifyResponse.ok) {
                             const verifyResult = await verifyResponse.json();
-                            if (verifyResult.isMember) {
-                                console.log("✅ Commitment verified in database!");
-                                console.log("   Source:", verifyResult.source);
-                            } else {
-                                console.warn("⚠️ Commitment not found in database yet. It may take a moment to sync.");
+                            if (!verifyResult.isMember) {
+                                console.warn("⚠️ Commitment not found in database yet");
                             }
-                        } else {
-                            console.warn("⚠️ Could not verify commitment in database:", await verifyResponse.text());
                         }
                     } catch (verifyError) {
-                        console.warn("⚠️ Error verifying commitment (non-critical):", verifyError.message);
                         // Don't throw - this is just a verification step
                     }
                 } catch (relayerError) {
-                    console.error("❌ Error joining group via relayer:", relayerError.message);
+                    console.error("❌ Error joining group:", relayerError.message);
                     throw relayerError;
                 }
 
@@ -233,8 +200,6 @@ export function useCreateIdentity() {
                         localStorage.setItem("ombuSemaphoreSignature", signature);
                         localStorage.setItem("ombuSemaphoreWalletAddress", walletAddress);
                         walletAddressRef.current = walletAddress;
-                        console.log("✅ Identity signature saved to localStorage");
-                        console.log("   Commitment (derived):", commitmentValue);
                         window.dispatchEvent(
                             new CustomEvent("ombuCommitmentCreated", {
                                 detail: commitmentValue,

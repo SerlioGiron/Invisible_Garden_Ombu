@@ -42,14 +42,8 @@ router.get('/', async (req, res) => {
       });
     }
 
-    console.log('🔍 Checking group membership in database...');
-    console.log('   Group ID:', groupId);
-    console.log('   Identity Commitment:', identityCommitment);
-
     // Check MongoDB database (single source of truth)
     try {
-      console.log('🔵 Connecting to MongoDB...');
-
       const clientOptions = {
         connectTimeoutMS: 30000,
         serverSelectionTimeoutMS: 30000,
@@ -59,7 +53,6 @@ router.get('/', async (req, res) => {
 
       mongoClient = new MongoClient(process.env.MONGODB_URI, clientOptions);
       await mongoClient.connect();
-      console.log('✅ MongoDB client connected');
 
       const database = mongoClient.db('OMBU');
       const collection = database.collection('Commitments');
@@ -71,11 +64,6 @@ router.get('/', async (req, res) => {
       });
 
       const isMemberInDB = !!document;
-      console.log('✅ Database check completed:', isMemberInDB);
-
-      if (document) {
-        console.log('   Found document with transaction:', document.transactionHash);
-      }
 
       return res.status(200).json({
         success: true,
@@ -108,7 +96,6 @@ router.get('/', async (req, res) => {
       );
 
       const isMember = await contract.isGroupMember(groupId, identityCommitment);
-      console.log('✅ Blockchain check completed:', isMember);
 
       return res.status(200).json({
         success: true,
@@ -138,7 +125,6 @@ router.get('/', async (req, res) => {
     if (mongoClient) {
       try {
         await mongoClient.close();
-        console.log('✅ MongoDB connection closed');
       } catch (closeError) {
         console.warn('⚠️ Error closing MongoDB connection:', closeError.message);
       }
