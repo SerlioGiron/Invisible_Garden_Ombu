@@ -1,6 +1,8 @@
 # OMBU
 
-🔗 **Demo:** [Add your demo link here]
+🔗 **Demo:** [Watch the demo](https://www.loom.com/share/dac57a1281fa4c3ca97ced0c1528411d)
+
+[Demo withouth comments](https://www.youtube.com/watch?v=m8EyBxnd1W4&feature=youtu.be)
 
 **Ombu** is a safe space for students to anonymously review their teachers and courses without fear of retaliation. Named after the Swedish Ombudsman—someone who investigates complaints against organizations or public authorities—Ombu empowers students to speak freely about their educational experiences.
 
