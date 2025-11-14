@@ -110,8 +110,8 @@ The AI moderation service runs in a separate repository:
 
 ```bash
 # Clone the AI backend repository
-git clone https://github.com/Diazgerard/ModeloHackathonAI.git
-cd ModeloHackathonAI
+git clone https://github.com/SerlioGiron/Invisible_garden_model.git
+cd Invisible_garden_model
 # Follow the setup instructions in that repository
 ```
 
@@ -150,7 +150,7 @@ The application will be available at `http://localhost:5173`.
 
 3. **Start the AI Backend** (in a third terminal):
 
-Follow the instructions in the [ModeloHackathonAI](https://github.com/Diazgerard/ModeloHackathonAI) repository.
+Follow the instructions in the [Invisible_garden_model](https://github.com/SerlioGiron/Invisible_garden_model) repository.
 
 ### Production Build
 
@@ -310,7 +310,7 @@ npm test
 - [Privy Documentation](https://docs.privy.io/)
 - [Foundry Book](https://book.getfoundry.sh/)
 - [Wagmi Documentation](https://wagmi.sh/)
-- [AI Backend Repository](https://github.com/Diazgerard/ModeloHackathonAI)
+- [AI Backend Repository](https://github.com/SerlioGiron/Invisible_garden_model)
 
 ---
 
