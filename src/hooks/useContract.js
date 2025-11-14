@@ -185,19 +185,16 @@ export function useContract() {
       return null;
     }
 
-    const storedCommitment = window.localStorage?.getItem("ombuSemaphoreCommitment");
-    if (!storedCommitment) {
+    // Always derive commitment from signature (single source of truth)
+    const identity = getSemaphoreIdentityFromStorage();
+    if (!identity) {
       return null;
     }
 
     try {
-      const trimmed = storedCommitment.trim();
-      if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
-        return BigInt(trimmed);
-      }
-      return BigInt(trimmed);
+      return BigInt(identity.commitment.toString());
     } catch (error) {
-      console.warn("Unable to parse stored identity commitment:", error);
+      console.warn("Unable to parse identity commitment:", error);
       return null;
     }
   };
@@ -403,8 +400,11 @@ export function useContract() {
             membersCount: groupData.members?.length || 0
           });
           
-          // Generate proof using content as signal
-          const proofData = await generateSemaphoreProof(identity, groupId, content, groupData);
+          // Generate proof using content + timestamp as signal to ensure uniqueness
+          // This prevents nullifier reuse when creating multiple posts
+          const uniqueSignal = `${content}||${Date.now()}||${Math.random()}`;
+          console.log("🔐 Generating unique signal for post:", uniqueSignal.substring(0, 50) + "...");
+          const proofData = await generateSemaphoreProof(identity, groupId, uniqueSignal, groupData);
           console.log("✅ Proof generated successfully");
           
           console.log("📤 Sending anonymous post via relayer...");

@@ -78,8 +78,9 @@ contract Ombu {
         ISemaphore.SemaphoreProof memory proof =
             ISemaphore.SemaphoreProof(_merkleTreeDepth, _merkleTreeRoot, _nullifier, _feedback, _groupId, _points);
 
-        // Validate the proof - this will revert if proof is invalid
-        semaphore.validateProof(_groupId, proof);
+        // Verify the proof - this checks validity WITHOUT saving the nullifier
+        // This allows users to create multiple posts (unlike validateProof which enforces one-signal-per-identity)
+        require(semaphore.verifyProof(_groupId, proof), "Semaphore: Invalid proof");
 
         // If proof is valid, create the post
 
@@ -110,8 +111,9 @@ contract Ombu {
         ISemaphore.SemaphoreProof memory proof =
             ISemaphore.SemaphoreProof(_merkleTreeDepth, _merkleTreeRoot, _nullifier, _feedback, _groupId, _points);
 
-        // Validate the proof - this will revert if proof is invalid
-        semaphore.validateProof(_groupId, proof);
+        // Verify the proof - this checks validity WITHOUT saving the nullifier
+        // This allows users to create multiple posts (unlike validateProof which enforces one-signal-per-identity)
+        require(semaphore.verifyProof(_groupId, proof), "Semaphore: Invalid proof");
 
         // If proof is valid, create the post
         // OmbuPost memory post = groupPosts[_groupId][_mainPostId];
@@ -133,7 +135,9 @@ contract Ombu {
         require(post.timestamp != 0, "Post does not exist");
 
         bool hasVoted = userPostVotes[_identityCommitment][_groupId][_postId];
-        require(!hasVoted, "User has already voted on this post");
+        if(hasVoted) {
+            deleteVoteOnPost(_groupId, _postId, _isUpvote, _identityCommitment);
+        }
 
         if (_isUpvote) {
             post.upvotes += 1;
@@ -158,7 +162,9 @@ contract Ombu {
         require(subPost.timestamp != 0, "SubPost does not exist");
 
         bool hasVoted = userSubPostVotes[_identityCommitment][_groupId][_postId][_subPostId];
-        require(!hasVoted, "User has already voted on this subpost");
+        if(hasVoted) {
+            deleteVoteOnSubPost(_groupId, _postId, _subPostId, _isUpvote, _identityCommitment);
+        }
 
         if (_isUpvote) {
             subPost.upvotes += 1;
@@ -169,7 +175,7 @@ contract Ombu {
     }
 
     // function to delete a vote on post.
-    function deleteVoteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote, uint256 _identityCommitment) external {
+    function deleteVoteOnPost(uint256 _groupId, uint256 _postId, bool _isUpvote, uint256 _identityCommitment) public {
         bool isAllowed = ISemaphoreGroups(address(semaphore)).hasMember(_groupId, _identityCommitment);
         require(isAllowed, "User is not a member of the group");
 
@@ -194,7 +200,7 @@ contract Ombu {
         uint256 _subPostId,
         bool _isUpvote,
         uint256 _identityCommitment
-    ) external {
+    ) public {
         bool isAllowed = ISemaphoreGroups(address(semaphore)).hasMember(_groupId, _identityCommitment);
         require(isAllowed, "User is not a member of the group");
 

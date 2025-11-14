@@ -7,7 +7,7 @@ import { Identity } from "@semaphore-protocol/identity";
 import { Group } from "@semaphore-protocol/group";
 
 /**
- * Check if user has a valid Semaphore identity (both commitment and signature)
+ * Check if user has a valid Semaphore identity (signature exists)
  * @returns {boolean} True if identity is complete, false otherwise
  */
 export function hasValidSemaphoreIdentity() {
@@ -15,10 +15,22 @@ export function hasValidSemaphoreIdentity() {
     return false;
   }
 
-  const storedCommitment = localStorage.getItem("ombuSemaphoreCommitment");
   const storedSignature = localStorage.getItem("ombuSemaphoreSignature");
-  
-  return !!(storedCommitment && storedSignature);
+
+  // Only need signature - commitment is derived from it
+  return !!storedSignature;
+}
+
+/**
+ * Get the current user's identity commitment (derived from signature)
+ * @returns {string|null} The commitment or null if no identity exists
+ */
+export function getCurrentUserCommitment() {
+  const identity = getSemaphoreIdentityFromStorage();
+  if (!identity) {
+    return null;
+  }
+  return identity.commitment.toString();
 }
 
 /**
@@ -177,6 +189,8 @@ export async function generateSemaphoreProof(identity, groupId, signal, groupDat
     }
 
     // Generate the proof
+    // Contract now uses verifyProof (not validateProof), which allows multiple posts per identity
+    // The proof verifies group membership without enforcing nullifier uniqueness
     console.log("🔍 Generating proof with identity commitment:", identity.commitment.toString());
     const proof = await generateProof(identity, group, feedback, groupId);
     console.log("🔍 Proof object:", proof);
@@ -229,19 +243,26 @@ export async function fetchGroupData(groupId) {
 
     // Log if user's commitment is missing (for debugging, but don't add it)
     if (typeof window !== "undefined") {
-      const storedCommitment = localStorage.getItem("ombuSemaphoreCommitment");
-      if (storedCommitment) {
-        const commitmentStr = storedCommitment.toString();
-        const commitmentHex = "0x" + BigInt(storedCommitment).toString(16).padStart(64, "0");
-        const isIncluded = members.includes(commitmentStr) || 
-                          members.includes(commitmentHex) ||
-                          members.some(m => m.toString() === commitmentStr || m.toString() === commitmentHex);
-        
-        if (!isIncluded) {
-          console.warn("⚠️ User's commitment not found in group members list.");
-          console.warn("   User commitment:", storedCommitment);
-          console.warn("   Group members:", members);
-          console.warn("   This might cause proof generation to fail if the user is not actually a member.");
+      const storedSignature = localStorage.getItem("ombuSemaphoreSignature");
+      if (storedSignature) {
+        try {
+          const identity = getSemaphoreIdentityFromStorage();
+          if (identity) {
+            const commitmentStr = identity.commitment.toString();
+            const commitmentHex = "0x" + BigInt(commitmentStr).toString(16).padStart(64, "0");
+            const isIncluded = members.includes(commitmentStr) ||
+                              members.includes(commitmentHex) ||
+                              members.some(m => m.toString() === commitmentStr || m.toString() === commitmentHex);
+
+            if (!isIncluded) {
+              console.warn("⚠️ User's commitment not found in group members list.");
+              console.warn("   User commitment:", commitmentStr);
+              console.warn("   Group members:", members);
+              console.warn("   This might cause proof generation to fail if the user is not actually a member.");
+            }
+          }
+        } catch (err) {
+          console.warn("⚠️ Error checking user commitment:", err);
         }
       }
     }

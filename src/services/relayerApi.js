@@ -142,7 +142,7 @@ export async function voteOnPostViaRelayer({
 export async function checkRelayerHealth() {
   try {
     const response = await fetch(`${RELAYER_URL}/health`);
-    
+
     if (!response.ok) {
       throw new Error('Relayer health check failed');
     }
@@ -151,5 +151,39 @@ export async function checkRelayerHealth() {
   } catch (error) {
     console.error('❌ Relayer health check failed:', error);
     throw new Error('Relayer server is not available. Make sure it is running.');
+  }
+}
+
+/**
+ * Verify if an identity commitment exists in the database
+ * This checks the MongoDB database first (single source of truth),
+ * with blockchain fallback if database is unavailable
+ * @param {string|BigInt} identityCommitment - The identity commitment to check
+ * @param {number} groupId - The group ID (optional, uses DEFAULT_GROUP_ID from constants)
+ * @returns {Promise<{success: boolean, isMember: boolean, identityCommitment: string, groupId: string, source: string}>}
+ */
+export async function verifyCommitmentOnChain(identityCommitment, groupId = DEFAULT_GROUP_ID) {
+  try {
+    console.log('🔍 Verifying commitment in database...');
+    console.log('   Commitment:', identityCommitment);
+    console.log('   Group ID:', groupId);
+
+    const response = await fetch(
+      `${RELAYER_URL}/api/check-member?identityCommitment=${identityCommitment}&groupId=${groupId}`
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || error.error || 'Failed to verify commitment');
+    }
+
+    const result = await response.json();
+    console.log('✅ Verification result:', result);
+    console.log('   Source:', result.source || 'database');
+
+    return result;
+  } catch (error) {
+    console.error('❌ Error verifying commitment:', error);
+    throw error;
   }
 }
