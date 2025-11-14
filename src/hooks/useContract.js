@@ -12,9 +12,10 @@ import {
   CONTRACT_CONFIG,
   CATEGORY_MAPPING,
   REVERSE_CATEGORY_MAPPING,
+  DEFAULT_GROUP_ID,
 } from "../services/contract";
 import { getFallbackData } from "../services/fallbackData";
-import { sendFeedbackViaRelayer } from "../services/relayerApi";
+import { sendFeedbackViaRelayer, voteOnPostViaRelayer } from "../services/relayerApi";
 import { 
   getSemaphoreIdentityFromStorage, 
   generateSemaphoreProof, 
@@ -27,24 +28,12 @@ export function useContract() {
   const publicClient = usePublicClient();
   const [useFallback, setUseFallback] = useState(false);
 
-  // Function to get all posts
-  const {
-    data: rawPosts,
-    isLoading: isLoadingPosts,
-    refetch: refetchPosts,
-    error,
-  } = useReadContract({
-    address: CONTRACT_CONFIG.address,
-    abi: CONTRACT_CONFIG.abi,
-    functionName: "getAllPosts",
-    query: {
-      staleTime: 10000, // 10 seconds
-      cacheTime: 300000, // 5 minutes
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchInterval: 30000, // Auto refetch every 30 seconds
-    },
-  });
+  // Note: getAllPosts function doesn't exist in the contract
+  // Posts need to be fetched individually or through a different method
+  const rawPosts = null;
+  const isLoadingPosts = false;
+  const refetchPosts = () => {};
+  const error = null;
 
   // Detect rate limiting errors and activate fallback
   useEffect(() => {
@@ -191,6 +180,121 @@ export function useContract() {
     }
   };
 
+  const getStoredIdentityCommitment = () => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    // Always derive commitment from signature (single source of truth)
+    const identity = getSemaphoreIdentityFromStorage();
+    if (!identity) {
+      return null;
+    }
+
+    try {
+      return BigInt(identity.commitment.toString());
+    } catch (error) {
+      console.warn("Unable to parse identity commitment:", error);
+      return null;
+    }
+  };
+
+  const normalizeBigInt = (value, name) => {
+    if (typeof value === "bigint") {
+      return value;
+    }
+    try {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
+          return BigInt(trimmed);
+        }
+        return BigInt(trimmed);
+      }
+      if (typeof value === "number") {
+        return BigInt(value);
+      }
+      throw new Error(`Unsupported type ${typeof value}`);
+    } catch (error) {
+      throw new Error(`Invalid ${name}: ${error.message}`);
+    }
+  };
+
+  const upvotePost = async (postId, options = {}) => {
+    const { groupId = DEFAULT_GROUP_ID, identityCommitment } = options;
+
+    if (postId === undefined || postId === null) {
+      throw new Error("postId is required to upvote");
+    }
+
+    try {
+      const commitment =
+        identityCommitment ??
+        getStoredIdentityCommitment() ??
+        (() => {
+          const identity = getSemaphoreIdentityFromStorage();
+          return identity ? normalizeBigInt(identity.commitment.toString(), "identity commitment") : null;
+        })();
+
+      if (!commitment) {
+        throw new Error("Semaphore identity commitment not found. Please join the group first.");
+      }
+
+      const normalizedGroupId = normalizeBigInt(groupId, "groupId");
+      const normalizedPostId = normalizeBigInt(postId, "postId");
+
+      const result = await voteOnPostViaRelayer({
+        groupId: normalizedGroupId.toString(),
+        postId: normalizedPostId.toString(),
+        identityCommitment: commitment.toString(),
+        isUpvote: true,
+      });
+
+      return result?.transactionHash || null;
+    } catch (error) {
+      console.error("Error downvoting post:", error);
+      throw error;
+    }
+  };
+
+  const downvotePost = async (postId, options = {}) => {
+    const { groupId = DEFAULT_GROUP_ID, identityCommitment } = options;
+
+    if (postId === undefined || postId === null) {
+      throw new Error("postId is required to downvote");
+    }
+
+    try {
+      const commitment =
+        identityCommitment ??
+        getStoredIdentityCommitment() ??
+        (() => {
+          const identity = getSemaphoreIdentityFromStorage();
+          return identity ? normalizeBigInt(identity.commitment.toString(), "identity commitment") : null;
+        })();
+
+      if (!commitment) {
+        throw new Error("Semaphore identity commitment not found. Please join the group first.");
+      }
+
+      const normalizedGroupId = normalizeBigInt(groupId, "groupId");
+      const normalizedPostId = normalizeBigInt(postId, "postId");
+
+      const result = await voteOnPostViaRelayer({
+        groupId: normalizedGroupId.toString(),
+        postId: normalizedPostId.toString(),
+        identityCommitment: commitment.toString(),
+        isUpvote: false,
+      });
+
+      return result?.transactionHash || null;
+    } catch (error) {
+      console.error("Error upvoting post:", error);
+      throw error;
+    }
+  };
+    
+
   // Function to create a post
   const post = async (title, content, category, topics = []) => {
     try {
@@ -254,53 +358,42 @@ export function useContract() {
   // Function to create a main post
   // Automatically generates Semaphore proof if identity exists (anonymous)
   // Otherwise falls back to direct contract call (non-anonymous)
-  const createMainPost = async (groupId, content, feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points) => {
+  const createMainPost = async (groupId, title, content, feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points) => {
     try {
-      console.log("Creating main post in group:", groupId, "Content:", content);
-      
       // If Semaphore proof parameters are explicitly provided, use them
       if (feedback !== undefined && merkleTreeDepth !== undefined && merkleTreeRoot !== undefined && nullifier !== undefined && points !== undefined) {
-        console.log("Using provided Semaphore proof parameters");
-        const response = await sendFeedbackViaRelayer({ 
-          content, 
-          groupId, 
-          feedback, 
-          merkleTreeDepth, 
-          merkleTreeRoot, 
-          nullifier, 
-          points 
+        const response = await sendFeedbackViaRelayer({
+          title,
+          content,
+          groupId,
+          feedback,
+          merkleTreeDepth,
+          merkleTreeRoot,
+          nullifier,
+          points
         });
-        console.log("Main post created successfully:", response);
+        console.log("✅ Post created:", response.transactionHash);
         return response;
       }
 
       // Try to generate proof automatically if identity exists
       const identity = getSemaphoreIdentityFromStorage();
       if (!identity) {
-        console.log("⚠️ No Semaphore identity found. Creating non-anonymous post. To enable anonymous posts, make sure you're logged in and have joined the Semaphore group.");
+        console.log("⚠️ No Semaphore identity found. To enable anonymous posts, make sure you're logged in and have joined the Semaphore group.");
       }
       
       if (identity && publicClient) {
         try {
-          console.log("🔐 Generating Semaphore proof for anonymous post...");
-
           // Fetch group data from Semaphore contract via relayer
           const groupData = await fetchGroupData(groupId);
-          console.log("📊 Group data fetched (raw):", JSON.stringify(groupData, null, 2));
-          console.log("📊 Group data members type:", typeof groupData.members);
-          console.log("📊 Group data members isArray:", Array.isArray(groupData.members));
-          console.log("📊 Group data summary:", {
-            depth: groupData.depth,
-            size: groupData.size,
-            membersCount: groupData.members?.length || 0
-          });
-          
-          // Generate proof using content as signal
-          const proofData = await generateSemaphoreProof(identity, groupId, content, groupData);
-          console.log("✅ Proof generated successfully");
-          
-          console.log("📤 Sending anonymous post via relayer...");
+
+          // Generate proof using content + timestamp as signal to ensure uniqueness
+          // This prevents nullifier reuse when creating multiple posts
+          const uniqueSignal = `${content}||${Date.now()}||${Math.random()}`;
+          const proofData = await generateSemaphoreProof(identity, groupId, uniqueSignal, groupData);
+
           const response = await sendFeedbackViaRelayer({
+            title,
             content,
             groupId,
             feedback: proofData.feedback,
@@ -309,26 +402,19 @@ export function useContract() {
             nullifier: proofData.nullifier,
             points: proofData.points,
           });
-          
-          console.log("✅ Anonymous post created successfully:", response);
+
+          console.log("✅ Post created:", response.transactionHash);
           return response;
         } catch (proofError) {
           console.error("❌ Failed to generate Semaphore proof:", proofError);
-          console.warn("⚠️ Falling back to non-anonymous post");
-          // Fall through to non-anonymous post
+          throw proofError;
         }
       }
 
       // Fallback to non-anonymous post via direct contract call
-      console.log("Using non-anonymous post via direct contract call");
-      await writeContract({
-        address: CONTRACT_CONFIG.address,
-        abi: CONTRACT_CONFIG.abi,
-        functionName: "createMainPost",
-        args: [groupId, content],
-      });
-      console.log("Main post created successfully");
-      return true;
+      // Note: Direct contract calls without Semaphore proof are not supported in this version
+      // The contract requires Semaphore proof parameters
+      throw new Error("Cannot create post without Semaphore identity. Please join the group first.");
     } catch (error) {
       console.error("Error creating main post:", error);
       throw error;
@@ -372,6 +458,8 @@ export function useContract() {
     addComment,
     createMainPost,
     estimateVoteGas,
+    upvotePost,
+    downvotePost,
     userAddress,
     isTransactionPending: isPending,
     transactionHash: hash,

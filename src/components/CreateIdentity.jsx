@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Identity } from "@semaphore-protocol/identity";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { DEFAULT_GROUP_ID } from "../services/contract";
+import { verifyCommitmentOnChain } from "../services/relayerApi";
 
 /**
  * Hook that automatically creates (or reuses) a Semaphore identity when the user is authenticated.
@@ -24,19 +25,22 @@ export function useCreateIdentity() {
             setHasCheckedStorage(true);
             return;
         }
-        const storedCommitment = localStorage.getItem("ombuSemaphoreCommitment");
         const storedSignature = localStorage.getItem("ombuSemaphoreSignature");
         const storedWalletAddress = localStorage.getItem("ombuSemaphoreWalletAddress");
-        
-        // If commitment exists but signature is missing, we need to recreate the identity
-        if (storedCommitment && !storedSignature) {
-            console.warn("⚠️ Commitment found but signature missing. Will recreate identity.");
-            localStorage.removeItem("ombuSemaphoreCommitment");
-            localStorage.removeItem("ombuSemaphoreWalletAddress");
-            setCommitment(null);
-        } else if (storedCommitment && storedSignature) {
-            setCommitment(storedCommitment);
-            walletAddressRef.current = storedWalletAddress;
+
+        // Always derive commitment from signature (single source of truth)
+        if (storedSignature) {
+            try {
+                const identity = new Identity(storedSignature);
+                const commitmentValue = identity.commitment.toString();
+                setCommitment(commitmentValue);
+                walletAddressRef.current = storedWalletAddress;
+            } catch (error) {
+                console.warn("⚠️ Failed to reconstruct identity, will recreate");
+                localStorage.removeItem("ombuSemaphoreSignature");
+                localStorage.removeItem("ombuSemaphoreWalletAddress");
+                setCommitment(null);
+            }
         }
         setHasCheckedStorage(true);
     }, []);
@@ -51,7 +55,6 @@ export function useCreateIdentity() {
             walletAddressRef.current = null;
             // Clear localStorage on logout
             if (typeof window !== "undefined") {
-                localStorage.removeItem("ombuSemaphoreCommitment");
                 localStorage.removeItem("ombuSemaphoreSignature");
                 localStorage.removeItem("ombuSemaphoreWalletAddress");
             }
@@ -74,7 +77,6 @@ export function useCreateIdentity() {
         if (walletAddressRef.current && walletAddressRef.current !== currentWalletAddress) {
             console.warn("⚠️ Wallet changed. Clearing old identity and creating new one...");
             if (typeof window !== "undefined") {
-                localStorage.removeItem("ombuSemaphoreCommitment");
                 localStorage.removeItem("ombuSemaphoreSignature");
                 localStorage.removeItem("ombuSemaphoreWalletAddress");
             }
@@ -89,9 +91,8 @@ export function useCreateIdentity() {
 
             // If signature is missing, recreate
             if (!storedSignature) {
-                console.warn("⚠️ Commitment exists but signature missing. Recreating identity...");
+                console.warn("⚠️ Signature missing. Recreating identity...");
                 if (typeof window !== "undefined") {
-                    localStorage.removeItem("ombuSemaphoreCommitment");
                     localStorage.removeItem("ombuSemaphoreWalletAddress");
                 }
                 setCommitment(null);
@@ -103,25 +104,12 @@ export function useCreateIdentity() {
             if (storedWalletAddress && storedWalletAddress !== currentWalletAddress) {
                 console.warn("⚠️ Wallet address mismatch. Recreating identity...");
                 if (typeof window !== "undefined") {
-                    localStorage.removeItem("ombuSemaphoreCommitment");
                     localStorage.removeItem("ombuSemaphoreSignature");
                     localStorage.removeItem("ombuSemaphoreWalletAddress");
                 }
                 setCommitment(null);
                 identityCreatedRef.current = false;
                 return;
-            }
-
-            // Log current identity details on login
-            try {
-                const identity = new Identity(storedSignature);
-                console.log("🔑 User logged in with existing identity:");
-                console.log("   Wallet Address:", storedWalletAddress);
-                console.log("   Commitment Hash:", commitment);
-                console.log("   Public Key:", identity.publicKey);
-                console.log("   Group ID:", DEFAULT_GROUP_ID);
-            } catch (identityError) {
-                console.error("❌ Error reconstructing identity for logging:", identityError);
             }
 
             return;
@@ -162,27 +150,16 @@ export function useCreateIdentity() {
                 const newIdentity = new Identity(signature);
                 const commitmentValue = newIdentity.commitment.toString();
 
-                console.log("✅ TEST: Identity created successfully!", {
-                    publicKey: newIdentity.publicKey,
-                    commitment: commitmentValue,
-                    privateKey: newIdentity.privateKey ? "present" : "missing",
-                });
+                // Via relayer (gasless - relayer pays for gas)
+                const relayerUrl = import.meta.env.VITE_RELAYER_URL || 'http://localhost:3001';
 
-
-                // Option 2: Via relayer (gasless - relayer pays for gas)
-                console.log("🔵 TEST: Adding member to Semaphore group via relayer...");
-                console.log("   Commitment:", commitmentValue);
-                console.log("   Group ID:", DEFAULT_GROUP_ID);
-                console.log("   Relayer URL: http://localhost:3001/api/join");
-                
                 try {
                     const requestBody = {
                         identityCommitment: commitmentValue,
                         groupId: DEFAULT_GROUP_ID
                     };
-                    console.log("   Request body:", JSON.stringify(requestBody, null, 2));
-                    
-                    const response = await fetch('http://localhost:3001/api/join', {
+
+                    const response = await fetch(`${relayerUrl}/api/join`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -190,47 +167,46 @@ export function useCreateIdentity() {
                         body: JSON.stringify(requestBody),
                     });
 
-                    console.log("   Response status:", response.status);
-                    console.log("   Response ok:", response.ok);
-
                     if (!response.ok) {
                         const errorData = await response.json();
-                        console.error("❌ TEST: Relayer error response:");
-                        console.error("   Error:", errorData.error);
-                        console.error("   Message:", errorData.message);
-                        console.error("   Details:", errorData.details);
-                        console.error("   Code:", errorData.code);
-                        console.error("   Error data:", errorData.errorData);
                         throw new Error(errorData.message || errorData.error || 'Failed to join group');
                     }
 
                     const result = await response.json();
-                    console.log("✅ TEST: Member added to Semaphore group successfully!");
-                    console.log("   Result:", JSON.stringify(result, null, 2));
+                    console.log("✅ Joined group:", result.transactionHash);
+
+                    // Verify that the commitment was stored in the database
+                    try {
+                        const verifyResponse = await fetch(`${relayerUrl}/api/check-member?identityCommitment=${commitmentValue}&groupId=${DEFAULT_GROUP_ID}`);
+
+                        if (verifyResponse.ok) {
+                            const verifyResult = await verifyResponse.json();
+                            if (!verifyResult.isMember) {
+                                console.warn("⚠️ Commitment not found in database yet");
+                            }
+                        }
+                    } catch (verifyError) {
+                        // Don't throw - this is just a verification step
+                    }
                 } catch (relayerError) {
-                    console.error("❌ TEST: Error adding member via relayer:");
-                    console.error("   Error type:", relayerError.constructor.name);
-                    console.error("   Error message:", relayerError.message);
-                    console.error("   Error stack:", relayerError.stack);
+                    console.error("❌ Error joining group:", relayerError.message);
                     throw relayerError;
                 }
 
                 if (typeof window !== "undefined") {
                     try {
-                        localStorage.setItem("ombuSemaphoreCommitment", commitmentValue);
-                        // Store the signature so we can reconstruct the identity for proof generation
+                        // Only store signature and wallet address
+                        // Commitment will always be derived from signature
                         localStorage.setItem("ombuSemaphoreSignature", signature);
-                        // Store wallet address to detect wallet changes
                         localStorage.setItem("ombuSemaphoreWalletAddress", walletAddress);
                         walletAddressRef.current = walletAddress;
-                        console.log("✅ TEST: Commitment, signature, and wallet address stored in localStorage");
                         window.dispatchEvent(
                             new CustomEvent("ombuCommitmentCreated", {
                                 detail: commitmentValue,
                             })
                         );
                     } catch (storageError) {
-                        console.warn("⚠️ TEST: Unable to persist commitment in localStorage", storageError);
+                        console.warn("⚠️ Unable to persist identity in localStorage", storageError);
                     }
                 }
 
@@ -238,7 +214,7 @@ export function useCreateIdentity() {
                     setCommitment(commitmentValue);
                 }
             } catch (err) {
-                console.error("❌ TEST: Error creating identity:", err);
+                console.error("❌ Error creating identity:", err);
                 if (!cancelled) {
                     setError(err);
                     identityCreatedRef.current = false;

@@ -7,6 +7,7 @@ import checkMemberRoute from './routes/checkMember.js';
 import getGroupsRoute from './routes/getGroups.js';
 import membersRoute from './routes/members.js';
 import adminRoute from './routes/admin.js';
+import voteRoute from './routes/vote.js';
 import { OMBU_CONTRACT_ADDRESS } from '../src/config/constants.js';
 
 dotenv.config();
@@ -46,6 +47,7 @@ app.use('/api/check-member', checkMemberRoute);
 app.use('/api/groups', getGroupsRoute);
 app.use('/api/members', membersRoute);
 app.use('/api/admin', adminRoute);
+app.use('/api/vote', voteRoute);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -67,7 +69,8 @@ app.get('/', (req, res) => {
       feedback: '/api/feedback',
       checkMember: '/api/check-member',
       groups: '/api/groups',
-      members: '/api/members/:groupId'
+      members: '/api/members/:groupId',
+      vote: '/api/vote'
     }
   });
 });

@@ -6,13 +6,13 @@ const router = express.Router();
 
 router.post('/', async (req, res) => {
   try {
-    const { groupId, feedback, content, merkleTreeDepth, merkleTreeRoot, nullifier, points } = req.body;
+    const { groupId, feedback, title, content, merkleTreeDepth, merkleTreeRoot, nullifier, points } = req.body;
 
     // Validate input
-    if (groupId === undefined || feedback === undefined || !merkleTreeDepth || !merkleTreeRoot || !nullifier || !content || points === undefined) {
+    if (groupId === undefined || feedback === undefined || !merkleTreeDepth || !merkleTreeRoot || !nullifier || !title || !content || points === undefined) {
       return res.status(400).json({
         error: 'Missing required parameter',
-        details: 'groupId, feedback (uint256), merkleTreeDepth, merkleTreeRoot, nullifier, content, and points are required'
+        details: 'groupId, feedback (uint256), title, content, merkleTreeDepth, merkleTreeRoot, nullifier, and points are required'
       });
     }
 
@@ -24,6 +24,7 @@ router.post('/', async (req, res) => {
 
     console.log('   Sending feedback...');
     console.log('   Group ID:', groupId);
+    console.log('   Title:', title);
     console.log('   Content:', content);
     console.log('   Contract:', OMBU_CONTRACT_ADDRESS);
     console.log('   Merkle Tree Depth:', merkleTreeDepth);
@@ -62,6 +63,7 @@ router.post('/', async (req, res) => {
       merkleTreeRoot,
       nullifier,
       feedback,
+      title,      // Title comes before content
       content,
       points
     );

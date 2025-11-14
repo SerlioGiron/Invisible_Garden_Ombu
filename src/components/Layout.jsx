@@ -6,7 +6,7 @@ import CreateIdentity from './CreateIdentity';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 
-const COMMITMENT_STORAGE_KEY = 'ombuSemaphoreCommitment';
+const SIGNATURE_STORAGE_KEY = 'ombuSemaphoreSignature';
 const COMMITMENT_EVENT = 'ombuCommitmentCreated';
 
 function Layout({ children }) {
@@ -24,11 +24,23 @@ function Layout({ children }) {
       return () => {};
     }
 
-    const storedCommitment = localStorage.getItem(COMMITMENT_STORAGE_KEY);
-    if (storedCommitment) {
-      setIdentityCommitment(storedCommitment);
-    }
-    setCommitmentChecked(true);
+    // Derive commitment from signature (single source of truth)
+    const loadCommitment = async () => {
+      const storedSignature = localStorage.getItem(SIGNATURE_STORAGE_KEY);
+      if (storedSignature) {
+        try {
+          const { Identity } = await import("@semaphore-protocol/identity");
+          const identity = new Identity(storedSignature);
+          setIdentityCommitment(identity.commitment.toString());
+        } catch (error) {
+          console.warn("Failed to derive commitment from signature:", error);
+          setIdentityCommitment(null);
+        }
+      }
+      setCommitmentChecked(true);
+    };
+
+    loadCommitment();
 
     const handleCommitmentCreated = (event) => {
       const commitmentValue = event.detail ?? null;
@@ -55,14 +67,25 @@ function Layout({ children }) {
       return;
     }
 
-    setCommitmentChecked(false);
-    const storedCommitment = localStorage.getItem(COMMITMENT_STORAGE_KEY);
-    if (storedCommitment) {
-      setIdentityCommitment(storedCommitment);
-    } else {
-      setIdentityCommitment(null);
-    }
-    setCommitmentChecked(true);
+    const loadCommitment = async () => {
+      setCommitmentChecked(false);
+      const storedSignature = localStorage.getItem(SIGNATURE_STORAGE_KEY);
+      if (storedSignature) {
+        try {
+          const { Identity } = await import("@semaphore-protocol/identity");
+          const identity = new Identity(storedSignature);
+          setIdentityCommitment(identity.commitment.toString());
+        } catch (error) {
+          console.warn("Failed to derive commitment from signature:", error);
+          setIdentityCommitment(null);
+        }
+      } else {
+        setIdentityCommitment(null);
+      }
+      setCommitmentChecked(true);
+    };
+
+    loadCommitment();
   }, [ready, authenticated]);
 
   const shouldCreateIdentity = useMemo(() => {

@@ -7,7 +7,7 @@ import { Identity } from "@semaphore-protocol/identity";
 import { Group } from "@semaphore-protocol/group";
 
 /**
- * Check if user has a valid Semaphore identity (both commitment and signature)
+ * Check if user has a valid Semaphore identity (signature exists)
  * @returns {boolean} True if identity is complete, false otherwise
  */
 export function hasValidSemaphoreIdentity() {
@@ -15,10 +15,22 @@ export function hasValidSemaphoreIdentity() {
     return false;
   }
 
-  const storedCommitment = localStorage.getItem("ombuSemaphoreCommitment");
   const storedSignature = localStorage.getItem("ombuSemaphoreSignature");
-  
-  return !!(storedCommitment && storedSignature);
+
+  // Only need signature - commitment is derived from it
+  return !!storedSignature;
+}
+
+/**
+ * Get the current user's identity commitment (derived from signature)
+ * @returns {string|null} The commitment or null if no identity exists
+ */
+export function getCurrentUserCommitment() {
+  const identity = getSemaphoreIdentityFromStorage();
+  if (!identity) {
+    return null;
+  }
+  return identity.commitment.toString();
 }
 
 /**
@@ -59,11 +71,6 @@ export async function generateSemaphoreProof(identity, groupId, signal, groupDat
     if (!identity) {
       throw new Error("Semaphore identity is required");
     }
-
-    console.log("🔍 Proof generation - groupData received:", JSON.stringify(groupData, null, 2));
-    console.log("🔍 Proof generation - members type:", typeof groupData.members);
-    console.log("🔍 Proof generation - members isArray:", Array.isArray(groupData.members));
-    console.log("🔍 Proof generation - members value:", groupData.members);
 
     // Dynamic import to avoid issues if package is not installed
     const { generateProof } = await import("@semaphore-protocol/proof");
@@ -129,37 +136,50 @@ export async function generateSemaphoreProof(identity, groupId, signal, groupDat
       ? groupData.members.map(m => convertToBigInt(m))
       : [];
 
-    console.log("🔍 Creating group with members:", members);
+    if (members.length === 0) {
+      throw new Error(
+        `No members found in the group database. This means:\n` +
+        `1. The group might not exist yet\n` +
+        `2. The database is empty or not accessible\n` +
+        `3. You're using the wrong group ID\n\n` +
+        `Group ID: ${groupId}\n` +
+        `Please contact support or check that the relayer is running properly.`
+      );
+    }
+
+    const isUserInGroup = members.some(m => m.toString() === identity.commitment.toString());
+
+    if (!isUserInGroup) {
+      throw new Error(
+        `Your identity commitment is not in the group yet. This might mean:\n` +
+        `1. You just joined and the transaction hasn't been confirmed\n` +
+        `2. The relayer failed to add you to the group\n` +
+        `3. The database is out of sync\n\n` +
+        `Your commitment: ${identity.commitment.toString()}\n` +
+        `Group members count: ${members.length}\n\n` +
+        `Try logging out and logging back in, or wait a few moments and try again.`
+      );
+    }
+
     const group = new Group(members);
-    console.log("🔍 Group created - root:", group.root.toString(), "depth:", group.depth, "size:", group.size);
-    console.log("🔍 Expected on-chain root:", groupData.root);
-    console.log("🔍 On-chain group size:", groupData.size);
 
     // Verify the group root matches (this is critical for proof validation)
-    // NOTE: Local verification skipped - proceeding with proof generation anyway
     if (group.root.toString() !== groupData.root) {
-      console.warn("⚠️ Group root mismatch (local verification skipped)");
-      console.warn("   Local root:", group.root.toString());
-      console.warn("   On-chain root:", groupData.root);
-      console.warn("   Local group size:", group.size, "On-chain group size:", groupData.size);
-      console.warn("   Proceeding with proof generation anyway...");
-      // Skip throwing error - let the on-chain validation handle it
+      console.warn("⚠️ Group root mismatch - Local:", group.root.toString(), "On-chain:", groupData.root);
+      throw new Error(
+        `Group data mismatch. The local group reconstruction doesn't match the on-chain state.\n` +
+        `This usually means the member list from the database is incomplete or out of sync.`
+      );
     }
 
     // Generate the proof
-    console.log("🔍 Generating proof with identity commitment:", identity.commitment.toString());
+    // Contract now uses verifyProof (not validateProof), which allows multiple posts per identity
+    // The proof verifies group membership without enforcing nullifier uniqueness
     const proof = await generateProof(identity, group, feedback, groupId);
-    console.log("🔍 Proof object:", proof);
 
     // Use on-chain root if available (to ensure proof validation passes)
     // This is important when local group might not perfectly match on-chain state
     const merkleTreeRoot = groupData.root || proof.merkleTreeRoot.toString();
-    
-    if (merkleTreeRoot !== proof.merkleTreeRoot.toString()) {
-      console.warn("⚠️ Using on-chain root instead of local proof root");
-      console.warn("   Local proof root:", proof.merkleTreeRoot.toString());
-      console.warn("   On-chain root:", merkleTreeRoot);
-    }
 
     return {
       merkleTreeDepth: proof.merkleTreeDepth,
@@ -196,25 +216,6 @@ export async function fetchGroupData(groupId) {
     // Use members directly from relayer (which uses MongoDB database as source of truth)
     // Members are stored in chronological order in the database
     const members = data.members || [];
-
-    // Log if user's commitment is missing (for debugging, but don't add it)
-    if (typeof window !== "undefined") {
-      const storedCommitment = localStorage.getItem("ombuSemaphoreCommitment");
-      if (storedCommitment) {
-        const commitmentStr = storedCommitment.toString();
-        const commitmentHex = "0x" + BigInt(storedCommitment).toString(16).padStart(64, "0");
-        const isIncluded = members.includes(commitmentStr) || 
-                          members.includes(commitmentHex) ||
-                          members.some(m => m.toString() === commitmentStr || m.toString() === commitmentHex);
-        
-        if (!isIncluded) {
-          console.warn("⚠️ User's commitment not found in group members list.");
-          console.warn("   User commitment:", storedCommitment);
-          console.warn("   Group members:", members);
-          console.warn("   This might cause proof generation to fail if the user is not actually a member.");
-        }
-      }
-    }
 
     return {
       root: data.root,

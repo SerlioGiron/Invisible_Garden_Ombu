@@ -36,9 +36,9 @@ const rutas = [
     navbar: true
   },
   {
-    label: "My Posts",
-    route: "/mis-publicaciones",
-    component: MisPosts,
+    label: "New Posts",
+    route: "/nueva-publicacion",
+    component: NewPost,
     icon: IconMessage,
     navbar: true
   },

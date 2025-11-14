@@ -145,17 +145,27 @@ function NewPost() {
         return;
       }
 
-      // Call createMainPost with groupId and content
-      // Note: We're only sending content, not title or other fields
-      // If you want to include title in content, you can concatenate them
-      const fullContent = `${formData.title}\n\n${formData.content}`;
-      await createMainPost(DEFAULT_GROUP_ID, fullContent);
+      // Call createMainPost with groupId, title, and content separately
+      await createMainPost(DEFAULT_GROUP_ID, formData.title, formData.content);
     } catch (error) {
       console.error("Error creating post:", error);
       setIsValidatingAI(false);
+
+      // Show specific error message from the error
+      let errorMessage = "Failed to create post. Please try again.";
+
+      if (error.message?.includes("identity commitment is not in the group")) {
+        errorMessage = "You haven't joined the group yet. Please log out and log back in to join the group first.";
+      } else if (error.message?.includes("Group data mismatch")) {
+        errorMessage = "Group data is out of sync. Please try again in a few moments or contact support.";
+      } else if (error.message?.includes("Cannot create post without Semaphore identity")) {
+        errorMessage = "Please log in with your wallet to create posts.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       setErrors({
-        submit:
-          "The comment is not coherent or doesn't have enough valid content. Please try again.",
+        submit: errorMessage,
       });
     } finally {
       setIsSubmitting(false);
